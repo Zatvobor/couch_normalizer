@@ -1,0 +1,2 @@
+defmodule CouchNormalize.Scenario do
+end
