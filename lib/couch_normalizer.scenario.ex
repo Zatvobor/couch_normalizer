@@ -1,7 +1,7 @@
 defmodule CouchNormalizer.Scenario do
 
   @moduledoc """
-  Data normalization scenarion. This is main behaviour for data migration
+  Data normalization scenario.
   """
 
   @doc false
@@ -9,29 +9,6 @@ defmodule CouchNormalizer.Scenario do
     true = CouchNormalizer.Registry.acquire(title, scenario)
   end
 
-
-  # defmacro __using__(_) do
-  #   quote do
-  #     import CouchNormalizer.Scenario
-  #
-  #     def normalize(env, handle_update) do
-  #
-  #       db      = Keyword.get(env, :db, nil)
-  #       doc_id  = Keyword.get(env, :doc_id, nil)
-  #       rev     = Keyword.get(env, :rev, nil)
-  #       body    = Keyword.get(env, :body, nil)
-  #
-  #       case apply(db, doc_id, rev, body) do
-  #         {:update, body} -> handle_update.(db, doc_id, body)
-  #         _               -> :skiped
-  #       end
-  #     end
-  #
-  #
-  #
-  #
-  #   end # quote do
-  # end # defmacro __using__
 
 
   defmacro field(body, name) do
