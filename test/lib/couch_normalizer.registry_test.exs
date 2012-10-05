@@ -1,7 +1,7 @@
 Code.require_file "../../test_helper.exs", __FILE__
 
 defmodule CouchNormalizer.RegistryTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
 
   def setup(_) do
