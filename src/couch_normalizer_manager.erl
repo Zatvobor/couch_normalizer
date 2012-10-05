@@ -3,7 +3,7 @@
 
 -include("couch_db.hrl").
 
--export([start_link/1, init/1, registry/0, lookup_next/1]).
+-export([start_link/1, init/1, registry/0, next_scenario/1]).
 
 -export([start_process/1]).
 
@@ -29,7 +29,7 @@ registry() ->
   application:get_env(?MODULE, registry).
 
 
-lookup_next(Normpos) ->
+next_scenario(Normpos) ->
   {ok, Pid} = registry(),
   case ets:next(Pid, Normpos) of
     '$end_of_table' -> nil;
@@ -38,7 +38,7 @@ lookup_next(Normpos) ->
 
 
 start_process(DbName) ->
-  start_link([{scenario_path, "/Volumes/branch320/opt/AZatvornitskiy/couch_normalizer/examples"}, {num_workers, x}]),
+  start_link([{scenario_path, "/Volumes/branch320/opt/AZatvornitskiy/couch_normalizer/src"}, {num_workers, x}]),
   try_enum_docs(DbName).
 
 
@@ -51,20 +51,21 @@ try_enum_docs(DbName) ->
 
     {Body} = couch_doc:to_json_obj(Doc, []),
     Id = couch_util:get_value(<<"_id">>, Body),
-    % Rev = couch_util:get_value(<<"_rev">>, Props),
+    Rev = couch_util:get_value(<<"_rev">>, Body),
+    Normpos = couch_util:get_value(<<"normpos">>, Body, <<"0">>),
 
-
-    io:fwrite("_id: ~s~n", [Id]),
 
     % Check normpos parameter
-    {_, _, Scenario} = lookup_next(<<"1">>),
-    case Scenario(DbName, Id, undefined, Body) of
+    {_, _, Scenario} = next_scenario(Normpos),
+    case Scenario(DbName, Id, Rev, Body) of
       {update, NewBody} ->
-          io:fwrite("updated document: ~p~n", [NewBody]),
+          io:fwrite("updated document '~s': ~n", [Id]),
+          % update execution status
           % update doc
           couch_db:update_doc(Db, couch_doc:from_json_obj({NewBody}), []);
       _ ->
-          io:fwrite("skipped~n")
+          % proceed
+          io:fwrite("skipped document '~s'~n", [Id])
     end,
 
     {ok, Acc}
