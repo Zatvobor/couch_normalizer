@@ -8,7 +8,7 @@
 -export([start_process/1]).
 
 
-start_link([{scenario_path, Ph}, {num_workers, NumWorkers}]) ->
+start_link([{scenario_path, Ph}]) ->
   % 1. setup registry
   application:start(elixir),
   application:set_env(?MODULE, registry, ets:new(s, [ordered_set, {keypos,1}])),
@@ -41,25 +41,77 @@ next_scenario(Normpos) ->
       ets:lookup(Pid, Key), H
   end.
 
+
 start_process(DbName) ->
-  start_link([{scenario_path, "/Volumes/branch320/opt/AZatvornitskiy/couch_normalizer/src"}, {num_workers, x}]),
-  try_enum_docs(DbName).
+
+  Options = [{scenario_path, "/Volumes/branch320/opt/AZatvornitskiy/couch_normalizer/src"}],
+
+  NumWorkers = couch_util:get_value(num_workers, Options, 3),
+  QMaxItems  = couch_util:get_value(qmax_items, Options, 100),
+
+  start_link(Options),
+
+  {ok, Q} = couch_work_queue:new([{max_items, QMaxItems}, {multi_workers, true}]),
+
+  spawn_producer(DbName, Q),
+
+  Workers = lists:map(
+    fun(_) ->
+      spawn_worker(Q)
+    end,
+    lists:seq(1, NumWorkers)
+  ).
+
+  % couch_task_status:add_task([
+  %     {type, replication},
+  %     {replication_id, ?l2b(BaseId ++ Ext)},
+  %     {doc_id, Rep#rep.doc_id},
+  %     {source, ?l2b(SourceName)},
+  %     {target, ?l2b(TargetName)},
+  %     {continuous, get_value(continuous, Options, false)},
+  %     {revisions_checked, 0},
+  %     {missing_revisions_found, 0},
+  %     {docs_read, 0},
+  %     {docs_written, 0},
+  %     {doc_write_failures, 0},
+  %     {source_seq, SourceCurSeq},
+  %     {checkpointed_source_seq, CommittedSeq},
+  %     {progress, 0}
+  % ]),
+  % couch_task_status:set_update_frequency(1000),
 
 
-try_enum_docs(DbName) ->
-  {ok, Db} = couch_db:open_int(DbName, []),
+spawn_producer(DbName, Q) ->
+  Producer = spawn(fun() ->
+    {ok, Db} = couch_db:open_int(DbName, []),
 
-  Fun = fun(FullDocInfo, _, Acc) ->
-    % apply all scenarions for given document
-    enum_scenarions(DbName, Db, FullDocInfo),
-    {ok, Acc}
-  end,
+    Fun = fun(FullDocInfo, _, Acc) ->
+      % apply all scenarions for given document
+      ok = couch_work_queue:queue(Q, {DbName, Db, FullDocInfo}),
+      {ok, Acc}
+    end,
 
-  % iterate through each document
-  {ok, _, _} = couch_db:enum_docs(Db, Fun, [], []),
+    % iterate through each document
+    {ok, _, _} = couch_db:enum_docs(Db, Fun, [], []),
 
-  % finish normalization process
-  ok = couch_db:close(Db).
+    % finish normalization process
+    ok = couch_db:close(Db)
+  end).
+
+
+spawn_worker(Q) ->
+  Parent = self(),
+  spawn(fun() -> worker_loop(Parent, Q) end).
+
+
+worker_loop(Parent, Q) ->
+  case couch_work_queue:dequeue(Q, 1) of
+    {ok, [{DbName, Db, FullDocInfo}]} ->
+      enum_scenarions(DbName, Db, FullDocInfo),
+      worker_loop(Parent, Q);
+    closed ->
+      stoped
+  end.
 
 
 enum_scenarions(DbName, Db, FullDocInfo) ->
@@ -69,8 +121,6 @@ enum_scenarions(DbName, Db, FullDocInfo) ->
   Id = couch_util:get_value(<<"_id">>, Body),
   Rev = couch_util:get_value(<<"_rev">>, Body),
   CurrentNormpos = couch_util:get_value(<<"normpos">>, Body, <<"0">>),
-
-  io:fwrite("enum for: '~p' where normpos is '~p' ~n", [Id, CurrentNormpos]),  % !!
 
   ok = apply_scenario(DbName, Db, FullDocInfo, Body, Id, Rev, CurrentNormpos).
 
@@ -82,7 +132,6 @@ apply_scenario(DbName, Db, FullDocInfo, Body, Id, Rev, CurrentNormpos) ->
         {update, NewBody} ->
             % update normpos
             NormalizedBody = {proplists:delete(<<"normpos">>, NewBody) ++ [{<<"normpos">>, Normpos}]},
-            io:fwrite("updated document: ~p ~n", [NormalizedBody]), % !!
 
             % update doc
             {ok, _} = couch_db:update_doc(Db, couch_doc:from_json_obj(NormalizedBody), []),
