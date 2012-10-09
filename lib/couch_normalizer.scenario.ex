@@ -12,12 +12,12 @@ defmodule CouchNormalizer.Scenario do
 
 
   defmacro field(body, name) do
-    quote do: Keyword.get(unquote(body), to_b(unquote(name)))
+    quote do: :proplists.get_value(to_b(unquote(name)), unquote(body), :nil)
   end
 
 
   defmacro remove_field(name) do
-    quote do: var!(body) = Keyword.delete(var!(body), to_b(unquote(name)))
+    quote do: var!(body) = :proplists.delete(to_b(unquote(name)), var!(body))
   end
 
 
@@ -32,22 +32,23 @@ defmodule CouchNormalizer.Scenario do
 
 
   defmacro update_field(name, value) do
-    quote do: update_field(unquote(name), unquote(name), unquote(value))
+    quote do
+      if field(var!(body), unquote(name)) do
+        remove_field unquote(name)
+        var!(body) = [{to_b(unquote(name)), unquote(value)}|var!(body)]
+      end
+    end
   end
 
 
   defmacro update_field(name, new_name, value) do
     quote do
-      case Keyword.key?(var!(body), to_b(unquote(name))) do
-        true  ->
-                  body = Keyword.delete(var!(body), to_b(unquote(name)))
-                  var!(body) = [{to_b(unquote(new_name)), unquote(value)}|body]
-        _     ->
-                  false
+      if field(var!(body), unquote(name)) do
+        var!(body) = [{to_b(unquote(new_name)), unquote(value)}|var!(body)]
+        remove_field unquote(name)
       end
     end
   end
-
 
 
   def to_b(name) when is_atom(name), do: atom_to_binary(name)

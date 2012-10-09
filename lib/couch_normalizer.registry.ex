@@ -15,8 +15,8 @@ defmodule CouchNormalizer.Registry do
 
   @doc false
   def acquire(norpos, title, scenario) do
-    case Erlang.application.get_env(:couch_normalizer_manager, :registry) do
-      {:ok, ticket} -> Erlang.ets.insert(ticket, {norpos, title, scenario})
+    case :application.get_env(:couch_normalizer_manager, :registry) do
+      {:ok, ticket} -> :ets.insert(ticket, {norpos, title, scenario})
       :undefined    -> raise "Can't find environment for :couch_normalizer_manager, :registry"
     end
   end
