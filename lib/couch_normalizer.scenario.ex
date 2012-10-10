@@ -22,7 +22,7 @@ defmodule CouchNormalizer.Scenario do
 
 
   defmacro remove_fields(names) do
-    quote do: lc f inlist unquote(names), do: remove_field(f)
+    lc name inlist names, do: quote(do: remove_field(unquote(name)))
   end
 
 

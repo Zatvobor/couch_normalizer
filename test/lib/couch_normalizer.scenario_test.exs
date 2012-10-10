@@ -34,7 +34,7 @@ defmodule CouchNormalizer.ScenarioTest do
     remove_fields [:unknown, :unknown]
     assert @fixture == body
 
-    remove_fields [:field_2, :field]
+    remove_fields([:field, :field_2])
     assert [{"field_3", :v3}] == body
   end
 
