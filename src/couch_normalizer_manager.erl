@@ -3,62 +3,61 @@
 
 -include("couch_db.hrl").
 
--export([start_link/1, init/1, registry/0, next_scenario/1]).
+% % public API
+-export([start_link/1, registry/0, next_scenario/1]).
+%
+% % gen_server callbacks
+-export([init/1, terminate/2]).
+-export([handle_call/3]). %, handle_cast/2, code_change/3, handle_info/2]).
+%
 
--export([start_process/1]).
+-record(state, {
+    scenarios_path = undefined,
+    num_workers,
+    qmax_items
+}).
 
 
-start_link([{scenario_path, Ph}]) ->
-  % 1. setup registry
+
+start_link(Options) ->
+  % configure
+  State = #state{
+    scenarios_path = couch_util:get_value(scenarios_path, Options),
+    num_workers    = couch_util:get_value(num_workers, Options, 3),
+    qmax_items     = couch_util:get_value(qmax_items, Options, 100)
+  },
+
+
+  % setup registry
   application:start(elixir),
   application:set_env(?MODULE, registry, ets:new(s, [ordered_set, {keypos,1}])),
 
-  % 2. compile and load scenarios
-  'Elixir-CouchNormalizer-Registry':load_all(Ph),
+  % compile and load scenarios
+  'Elixir-CouchNormalizer-Registry':load_all(State#state.scenarios_path),
 
-  % 3. spawn server
-  {ok, _} = gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
-
-
-init(_args) ->
-  % 1. init workers pool
-  {ok, []}.
+  % spawn server instance
+  {ok, _} = gen_server:start_link({local, ?MODULE}, ?MODULE, State, []).
 
 
-registry() ->
-  application:get_env(?MODULE, registry).
+%
+% gen_server callbacks
+%
 
+init(State) -> {ok, State}.
 
-next_scenario(Normpos) when is_list(Normpos) ->
-  next_scenario(list_to_binary(Normpos));
+terminate(_Reason, _State) -> ok.
 
-next_scenario(Normpos) ->
-  {ok, Pid} = registry(),
-  case ets:next(Pid, Normpos) of
-    '$end_of_table' ->
-      nil;
-    Key -> [H|T] =
-      ets:lookup(Pid, Key), H
-  end.
-
-
-start_process(DbName) ->
-
-  Options = [{scenario_path, "/Volumes/branch320/opt/AZatvornitskiy/couch_normalizer/src"}],
-
-  NumWorkers = couch_util:get_value(num_workers, Options, 3),
-  QMaxItems  = couch_util:get_value(qmax_items, Options, 100),
-
-  start_link(Options),
-
-  {ok, Q} = couch_work_queue:new([{max_items, QMaxItems}, {multi_workers, true}]),
+handle_call({normalize, DbName}, _From, State) ->
+  {ok, Q} = couch_work_queue:new([{max_items, State#state.qmax_items}, {multi_workers, true}]),
 
   spawn_producer(DbName, Q),
 
   Workers = lists:map(
     fun(_) -> spawn_worker(Q) end,
-    lists:seq(1, NumWorkers)
-  ).
+    lists:seq(1, State#state.num_workers)
+  ),
+
+  {reply, Workers, State}.
 
   % couch_task_status:add_task([
   %     {type, replication},
@@ -79,8 +78,34 @@ start_process(DbName) ->
   % couch_task_status:set_update_frequency(1000),
 
 
+%
+% public API
+%
+
+registry() ->
+  application:get_env(?MODULE, registry).
+
+
+next_scenario(Normpos) when is_list(Normpos) ->
+  next_scenario(list_to_binary(Normpos));
+
+next_scenario(Normpos) ->
+  {ok, Pid} = registry(),
+  case ets:next(Pid, Normpos) of
+    '$end_of_table' ->
+      nil;
+    Key -> [H|_] =
+      ets:lookup(Pid, Key), H
+  end.
+
+
+
+%
+% private
+%
+
 spawn_producer(DbName, Q) ->
-  Producer = spawn(fun() ->
+  spawn(fun() ->
     {ok, Db} = couch_db:open_int(DbName, []),
 
     Fun = fun(FullDocInfo, _, Acc) ->
