@@ -56,9 +56,7 @@ start_process(DbName) ->
   spawn_producer(DbName, Q),
 
   Workers = lists:map(
-    fun(_) ->
-      spawn_worker(Q)
-    end,
+    fun(_) -> spawn_worker(Q) end,
     lists:seq(1, NumWorkers)
   ).
 
@@ -120,7 +118,7 @@ enum_scenarions(DbName, Db, FullDocInfo) ->
   {Body} = couch_doc:to_json_obj(Doc, []),
   Id = couch_util:get_value(<<"_id">>, Body),
   Rev = couch_util:get_value(<<"_rev">>, Body),
-  CurrentNormpos = couch_util:get_value(<<"normpos">>, Body, <<"0">>),
+  CurrentNormpos = couch_util:get_value(<<"normpos_">>, Body, <<"0">>),
 
   ok = apply_scenario(DbName, Db, FullDocInfo, Body, Id, Rev, CurrentNormpos).
 
@@ -131,7 +129,7 @@ apply_scenario(DbName, Db, FullDocInfo, Body, Id, Rev, CurrentNormpos) ->
       case Scenario(DbName, Id, Rev, Body) of
         {update, NewBody} ->
             % update normpos
-            NormalizedBody = {proplists:delete(<<"normpos">>, NewBody) ++ [{<<"normpos">>, Normpos}]},
+            NormalizedBody = {proplists:delete(<<"normpos_">>, NewBody) ++ [{<<"normpos_">>, Normpos}]},
 
             % update doc
             {ok, _} = couch_db:update_doc(Db, couch_doc:from_json_obj(NormalizedBody), []),
