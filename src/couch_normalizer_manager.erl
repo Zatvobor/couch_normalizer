@@ -3,13 +3,13 @@
 
 -include("couch_db.hrl").
 
-% % public API
+% public API
 -export([start_link/1, registry/0, next_scenario/1]).
 %
-% % gen_server callbacks
+% gen_server callbacks
 -export([init/1, terminate/2]).
 -export([handle_call/3]). %, handle_cast/2, code_change/3, handle_info/2]).
-%
+
 
 -record(state, {
     scenarios_path = undefined,
@@ -22,7 +22,7 @@
 start_link(Options) ->
   % configure
   State = #state{
-    scenarios_path = couch_util:get_value(scenarios_path, Options),
+    scenarios_path = couch_util:get_value(scenarios_path, Options, "/usr/local/etc/couchdb/scenarions"),
     num_workers    = couch_util:get_value(num_workers, Options, 3),
     qmax_items     = couch_util:get_value(qmax_items, Options, 100)
   },

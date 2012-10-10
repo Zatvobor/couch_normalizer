@@ -2,10 +2,10 @@
              [{description,"Couch DB Normalization manager"},
               {vsn,"git"},
               {modules,['Elixir-CouchNormalizer-Registry',
-                        'Elixir-CouchNormalizer-Scenario',
+                        'Elixir-CouchNormalizer-Scenario',couch_normalizer,
                         couch_normalizer_app,couch_normalizer_httpd_db,
                         couch_normalizer_manager]},
               {registered,[couch_migration_manager]},
               {applications,[kernel,stdlib,couch]},
-              {mod,{couch_normalizer_app,[]}},
+              {mod,{couch_normalizer,[]}},
               {env,[]}]}.

@@ -2,13 +2,13 @@
  [
   {description, "Couch DB Normalization manager"},
   {vsn, "git"},
-  {modules, [couch_normalizer_app]},
+  {modules, [couch_normalizer]},
   {registered, [couch_migration_manager]},
   {applications, [
                   kernel,
                   stdlib,
                   couch
                  ]},
-  {mod, { couch_normalizer_app, []}},
+  {mod, { couch_normalizer, []}},
   {env, []}
  ]}.

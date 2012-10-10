@@ -1,4 +1,4 @@
--module(couch_normalizer_app).
+-module(couch_normalizer).
 
 -behaviour(application).
 
@@ -10,7 +10,7 @@
 %% ===================================================================
 
 start(normal, _StartArgs) ->
-    couch_normalizer_manager:start_link({}).
+    couch_normalizer_manager:start_link([]).
 
 stop(_State) ->
     ok.
