@@ -3,12 +3,13 @@ defmodule CouchNormalizer.Registry do
 
   @doc false
   def acquire(title, scenario) do
-    norpos = String.at(title, 0)
-    case Regex.match?(%r/\d+/, norpos) do
+    matches = Regex.run %r/(\d+)-/, title
+    case is_list(matches) do
       true  ->
+        [_,norpos|_] = matches
         acquire(norpos, title, scenario)
       false ->
-        raise "Can't find the normalization position in '#{title}' title (it should be defined as '1-example-scenario' where '1' is the normalization position (:norompos))."
+        raise "Can't find the normalization position in '#{title}' title (it should be defined as '1-example-scenario' where '1' is the normalization position field)."
     end
   end
 
