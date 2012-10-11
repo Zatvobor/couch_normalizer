@@ -22,7 +22,8 @@ defmodule CouchNormalizer.Scenario do
 
 
   defmacro remove_fields(names) do
-    lc name inlist names, do: quote(do: remove_field(unquote(name)))
+    removers = lc name inlist names, do: quote(do: remove_field(unquote(name)))
+    quote do: unquote_splicing(removers)
   end
 
 
@@ -48,6 +49,11 @@ defmodule CouchNormalizer.Scenario do
         remove_field unquote(name)
       end
     end
+  end
+
+
+  defmacro create_field(name, value) do
+    quote do: var!(body) = var!(body) ++ [{to_b(unquote(name)), to_b(unquote(value))}]
   end
 
 
