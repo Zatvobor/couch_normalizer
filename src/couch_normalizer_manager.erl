@@ -4,36 +4,42 @@
 -include("couch_db.hrl").
 
 % public API
--export([start_link/1, registry/0, next_scenario/1]).
-%
+-export([start_link/1]).
+
 % gen_server callbacks
 -export([init/1, terminate/2]).
 -export([handle_call/3]). %, handle_cast/2, code_change/3, handle_info/2]).
 
 
--record(state, {
+-record(scope, {
+    % common processing scope definition
+    label,
     scenarios_path = undefined,
     num_workers,
-    qmax_items
+    qmax_items,
+    % dynamic properties, unique for each processing flow
+    scenarios_ets,
+    processing_queue
 }).
 
 
+start_link(Config) ->
 
-start_link(Options) ->
   % configure
-  State = #state{
-    scenarios_path = couch_util:get_value(scenarios_path, Options, "/usr/local/etc/couchdb/scenarions"),
-    num_workers    = couch_util:get_value(num_workers, Options, 3),
-    qmax_items     = couch_util:get_value(qmax_items, Options, 100)
-  },
+  F = fun({Label, Options} = _E) ->
+    Scope = #scope {
+      label = Label,
+      scenarios_path = couch_util:get_value(scenarios_path, Options, "/usr/local/etc/couchdb/scenarions"),
+      num_workers    = couch_util:get_value(num_workers, Options, 3),
+      qmax_items     = couch_util:get_value(qmax_items, Options, 100)
+    },
+    {Label, Scope}
+  end,
 
+  State = lists:map(F, Config),
 
   % setup registry
   application:start(elixir),
-  application:set_env(?MODULE, registry, ets:new(s, [ordered_set, {keypos,1}])),
-
-  % compile and load scenarios
-  'Elixir-CouchNormalizer-Registry':load_all(State#state.scenarios_path),
 
   % spawn server instance
   {ok, _} = gen_server:start_link({local, ?MODULE}, ?MODULE, State, []).
@@ -48,16 +54,23 @@ init(State) -> {ok, State}.
 terminate(_Reason, _State) -> ok.
 
 handle_call({normalize, DbName}, _From, State) ->
-  {ok, Q} = couch_work_queue:new([{max_items, State#state.qmax_items}, {multi_workers, true}]),
+  case proplists:lookup(binary_to_atom(DbName, utf8), State) of
+    {_, Scope} ->
+      application:set_env(?MODULE, registry, ets:new(s, [ordered_set, {keypos,1}])),
 
-  spawn_producer(DbName, Q),
+      % compile and load scenarios
+      'Elixir-CouchNormalizer-Registry':load_all(Scope#scope.scenarios_path),
 
-  Workers = lists:map(
-    fun(_) -> spawn_worker(Q) end,
-    lists:seq(1, State#state.num_workers)
-  ),
+      % move aquired scenarions back to the given scope
+      {ok, ScenariosEts}    = application:get_env(?MODULE, registry),
+      {ok, ProcessingQueue} = couch_work_queue:new([{max_items, Scope#scope.qmax_items}, {multi_workers, true}]),
 
-  {reply, Workers, State}.
+      spawn_processing(Scope#scope{scenarios_ets = ScenariosEts, processing_queue = ProcessingQueue}, DbName),
+
+      {reply, ok, State};
+    none ->
+      {reply, {error, "Skipped. Can't find requested scope."}, State}
+  end.
 
   % couch_task_status:add_task([
   %     {type, replication},
@@ -78,39 +91,20 @@ handle_call({normalize, DbName}, _From, State) ->
   % couch_task_status:set_update_frequency(1000),
 
 
-%
-% public API
-%
 
-registry() ->
-  application:get_env(?MODULE, registry).
+%%
+%% private
+%%
 
-
-next_scenario(Normpos) when is_list(Normpos) ->
-  next_scenario(list_to_binary(Normpos));
-
-next_scenario(Normpos) ->
-  {ok, Pid} = registry(),
-  case ets:next(Pid, Normpos) of
-    '$end_of_table' ->
-      nil;
-    Key -> [H|_] =
-      ets:lookup(Pid, Key), H
-  end.
-
-
-
-%
-% private
-%
-
-spawn_producer(DbName, Q) ->
+spawn_processing(S, DbName) ->
+  % spawn producer
   spawn(fun() ->
     {ok, Db} = couch_db:open_int(DbName, []),
 
     Fun = fun(FullDocInfo, _, Acc) ->
-      % apply all scenarions for given document
-      ok = couch_work_queue:queue(Q, {DbName, Db, FullDocInfo}),
+      % move given document into the processing_queue
+      ok = couch_work_queue:queue(S#scope.processing_queue, {DbName, Db, FullDocInfo}),
+
       {ok, Acc}
     end,
 
@@ -119,37 +113,37 @@ spawn_producer(DbName, Q) ->
 
     % finish normalization process
     ok = couch_db:close(Db)
-  end).
+  end),
+
+  % spawn workers
+  lists:map(fun(_) -> spawn(fun() -> worker_loop(S) end) end, lists:seq(1, S#scope.num_workers)).
 
 
-spawn_worker(Q) ->
-  Parent = self(),
-  spawn(fun() -> worker_loop(Parent, Q) end).
-
-
-worker_loop(Parent, Q) ->
-  case couch_work_queue:dequeue(Q, 1) of
-    {ok, [{DbName, Db, FullDocInfo}]} ->
-      enum_scenarions(DbName, Db, FullDocInfo),
-      worker_loop(Parent, Q);
+worker_loop(S) ->
+  case couch_work_queue:dequeue(S#scope.processing_queue, 1) of
+    {ok, [DocInfo]} ->
+      enum_scenarions(S#scope.scenarios_ets, DocInfo),
+      worker_loop(S);
     closed ->
       stoped
   end.
 
 
-enum_scenarions(DbName, Db, FullDocInfo) ->
+enum_scenarions(Ets, {DbName, Db, FullDocInfo} = DocInfo) ->
   {ok, Doc} = couch_db:open_doc(Db, FullDocInfo),
-
   {Body} = couch_doc:to_json_obj(Doc, []),
+
   Id = couch_util:get_value(<<"_id">>, Body),
   Rev = couch_util:get_value(<<"_rev">>, Body),
   CurrentNormpos = couch_util:get_value(<<"normpos_">>, Body, <<"0">>),
 
-  ok = apply_scenario(DbName, Db, FullDocInfo, Body, Id, Rev, CurrentNormpos).
+  DocObject = {Body, Id, Rev, CurrentNormpos},
+
+  ok = apply_scenario(Ets, DocInfo, DocObject).
 
 
-apply_scenario(DbName, Db, FullDocInfo, Body, Id, Rev, CurrentNormpos) ->
-  case next_scenario(CurrentNormpos) of
+apply_scenario(Ets, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
+  case next_scenario(Ets, CurrentNormpos) of
     {Normpos, _, Scenario} ->
       case Scenario(DbName, Id, Rev, Body) of
         {update, NewBody} ->
@@ -164,7 +158,19 @@ apply_scenario(DbName, Db, FullDocInfo, Body, Id, Rev, CurrentNormpos) ->
             Int = list_to_integer(binary_to_list(CurrentNormpos)),
             NextNormpos = list_to_binary(integer_to_list(Int + 1)),
 
-            ok = apply_scenario(DbName, Db, FullDocInfo, Body, Id, Rev, NextNormpos)
+            ok = apply_scenario(Ets, {DbName, Db, FullDocInfo}, {Body, Id, Rev, NextNormpos})
       end;
     nil -> ok
+  end.
+
+
+next_scenario(Ets, Normpos) when is_list(Normpos) ->
+  next_scenario(Ets, list_to_binary(Normpos));
+
+next_scenario(Ets, Normpos) ->
+  case ets:next(Ets, Normpos) of
+    '$end_of_table' ->
+      nil;
+    Key -> [H|_] =
+      ets:lookup(Ets, Key), H
   end.
