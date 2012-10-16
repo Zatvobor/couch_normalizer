@@ -14,7 +14,7 @@ elixir:
 	mix compile
 
 
-test: erlang test_elixir
+test: test_elixir
 
 
 test_elixir:
