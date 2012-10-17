@@ -108,11 +108,11 @@ spawn_processing(S, DbName) ->
       {ok, Acc}
     end,
 
-    % iterate through each document
-    {ok, _, _} = couch_db:enum_docs(Db, Fun, [], []),
+    % close
+    ok = couch_db:close(Db),
 
-    % finish normalization process
-    ok = couch_db:close(Db)
+    % iterate through each document
+    {ok, _, _} = couch_db:enum_docs(Db, Fun, [], [])
   end),
 
   % spawn workers
@@ -130,9 +130,10 @@ worker_loop(S) ->
   end.
 
 
-enum_scenarions(S, {_, Db, FullDocInfo} = DocInfo) ->
+enum_scenarions(S, {DbName, _, FullDocInfo} = DocInfo) ->
+  {ok, Db} = couch_db:open_int(DbName, []),
   {ok, Doc} = couch_db:open_doc(Db, FullDocInfo),
-  {Body} = couch_doc:to_json_obj(Doc, []),
+  {Body}    = couch_doc:to_json_obj(Doc, []),
 
   Id = couch_util:get_value(<<"_id">>, Body),
   Rev = couch_util:get_value(<<"_rev">>, Body),
@@ -144,6 +145,7 @@ enum_scenarions(S, {_, Db, FullDocInfo} = DocInfo) ->
 
 
 apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
+  % find next scenario according to last normpos_ position (or start from the beginning)
   case couch_normalizer_util:next_scenario(S#scope.scenarios_ets, CurrentNormpos) of
     {Normpos, _, Scenario} ->
       case Scenario(DbName, Id, Rev, Body) of
@@ -153,7 +155,9 @@ apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
 
             % update doc
             {ok, _} = couch_db:update_doc(Db, couch_doc:from_json_obj(NormalizedBody), []),
-            ok; % !! enum_scenarions(DbName, Db, Id);
+            ok = couch_db:close(Db),
+            % try again to apply other scenarions for that document
+            ok = enum_scenarions(S, {DbName, Db, Id});
         _ ->
             % increase the current normpos value and try to apply for the current document
             Int = list_to_integer(binary_to_list(CurrentNormpos)),
