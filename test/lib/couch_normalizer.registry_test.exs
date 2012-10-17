@@ -19,7 +19,7 @@ defmodule CouchNormalizer.RegistryTest do
   test "acquire(title, scenario)" do
     assert CouchNormalizer.Registry.acquire("1-scenario", fn(_x) -> nil end) == true
     assert CouchNormalizer.Registry.acquire("10-scenario", fn(_x) -> nil end) == true
-    {:ok, t} = :couch_normalizer_manager.registry
+    {:ok, t} = :application.get_env(:couch_normalizer_manager, :registry)
 
     [s] = :ets.lookup(t, "1")
 
@@ -31,7 +31,7 @@ defmodule CouchNormalizer.RegistryTest do
 
   test "acquire(title, scenario) multiple" do
     Enum.each ["3-scenario", "2-scenario", "1-scenario"], CouchNormalizer.Registry.acquire(&1, fn(_x) -> nil end)
-    {:ok, t} = :couch_normalizer_manager.registry
+    {:ok, t} = :application.get_env(:couch_normalizer_manager, :registry)
 
     assert :ets.first(t)      == "1"
     assert :ets.next(t, "1")  == "2"
@@ -41,7 +41,7 @@ defmodule CouchNormalizer.RegistryTest do
 
   test "load('test/1-test-scenario.exs')" do
     assert CouchNormalizer.Registry.load("test/1-test-scenario.exs") == []
-    {:ok, t} = :couch_normalizer_manager.registry
+    {:ok, t} = :application.get_env(:couch_normalizer_manager, :registry)
     [h|t] = :ets.lookup(t, "1")
 
     assert tuple_size(h) == 3

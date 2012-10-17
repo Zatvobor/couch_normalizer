@@ -62,7 +62,7 @@ handle_call({normalize, DbName}, _From, State) ->
       'Elixir-CouchNormalizer-Registry':load_all(Scope#scope.scenarios_path),
 
       % move aquired scenarions back to the given scope
-      {ok, ScenariosEts}    = application:get_env(?MODULE, registry),
+      ScenariosEts          = couch_normalizer_util:current_registry(),
       {ok, ProcessingQueue} = couch_work_queue:new([{max_items, Scope#scope.qmax_items}, {multi_workers, true}]),
 
       spawn_processing(Scope#scope{scenarios_ets = ScenariosEts, processing_queue = ProcessingQueue}, DbName),
@@ -143,7 +143,7 @@ enum_scenarions(Ets, {DbName, Db, FullDocInfo} = DocInfo) ->
 
 
 apply_scenario(Ets, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
-  case next_scenario(Ets, CurrentNormpos) of
+  case couch_normalizer_util:next_scenario(Ets, CurrentNormpos) of
     {Normpos, _, Scenario} ->
       case Scenario(DbName, Id, Rev, Body) of
         {update, NewBody} ->
@@ -161,16 +161,4 @@ apply_scenario(Ets, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) 
             ok = apply_scenario(Ets, {DbName, Db, FullDocInfo}, {Body, Id, Rev, NextNormpos})
       end;
     nil -> ok
-  end.
-
-
-next_scenario(Ets, Normpos) when is_list(Normpos) ->
-  next_scenario(Ets, list_to_binary(Normpos));
-
-next_scenario(Ets, Normpos) ->
-  case ets:next(Ets, Normpos) of
-    '$end_of_table' ->
-      nil;
-    Key -> [H|_] =
-      ets:lookup(Ets, Key), H
   end.
