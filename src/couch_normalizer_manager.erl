@@ -121,15 +121,16 @@ spawn_processing(S, DbName) ->
 
 worker_loop(S) ->
   case couch_work_queue:dequeue(S#scope.processing_queue, 1) of
+    % apply scenarios for given DocInfo
     {ok, [DocInfo]} ->
-      enum_scenarions(S#scope.scenarios_ets, DocInfo),
+      enum_scenarions(S, DocInfo),
       worker_loop(S);
-    closed ->
-      stoped
+    % stopped processing in case when processing_queue closed
+    closed -> stoped
   end.
 
 
-enum_scenarions(Ets, {DbName, Db, FullDocInfo} = DocInfo) ->
+enum_scenarions(S, {_, Db, FullDocInfo} = DocInfo) ->
   {ok, Doc} = couch_db:open_doc(Db, FullDocInfo),
   {Body} = couch_doc:to_json_obj(Doc, []),
 
@@ -139,11 +140,11 @@ enum_scenarions(Ets, {DbName, Db, FullDocInfo} = DocInfo) ->
 
   DocObject = {Body, Id, Rev, CurrentNormpos},
 
-  ok = apply_scenario(Ets, DocInfo, DocObject).
+  ok = apply_scenario(S, DocInfo, DocObject).
 
 
-apply_scenario(Ets, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
-  case couch_normalizer_util:next_scenario(Ets, CurrentNormpos) of
+apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
+  case couch_normalizer_util:next_scenario(S#scope.scenarios_ets, CurrentNormpos) of
     {Normpos, _, Scenario} ->
       case Scenario(DbName, Id, Rev, Body) of
         {update, NewBody} ->
@@ -158,7 +159,7 @@ apply_scenario(Ets, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) 
             Int = list_to_integer(binary_to_list(CurrentNormpos)),
             NextNormpos = list_to_binary(integer_to_list(Int + 1)),
 
-            ok = apply_scenario(Ets, {DbName, Db, FullDocInfo}, {Body, Id, Rev, NextNormpos})
+            ok = apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, NextNormpos})
       end;
     nil -> ok
   end.
