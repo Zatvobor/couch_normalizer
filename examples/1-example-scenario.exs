@@ -1,6 +1,6 @@
 import CouchNormalizer.Scenario
 
-CouchNormalizer.Scenario.define "1-example-scenario", fn(_db, _doc_id, _rev, body) ->
+CouchNormalizer.Scenario.define "1-example-scenario", fn(db, _doc_id, _rev, body) ->
 
   # before_filter
   if field(body, :type) == "user" do
@@ -17,6 +17,9 @@ CouchNormalizer.Scenario.define "1-example-scenario", fn(_db, _doc_id, _rev, bod
     create_field :array,  ["hello", "world"]
     create_field :hash,   {[{"key", "value"}, {"key_1", "value_1"}]}
     create_field :number, 10
+
+    # 4. read another document
+    create_field :link, doc_field(db, "id", :link)
 
     {:update, body}
   end

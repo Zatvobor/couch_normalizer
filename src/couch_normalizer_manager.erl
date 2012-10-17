@@ -131,16 +131,7 @@ worker_loop(S) ->
 
 
 enum_scenarions(S, {DbName, _, FullDocInfo} = DocInfo) ->
-  {ok, Db} = couch_db:open_int(DbName, []),
-  {ok, Doc} = couch_db:open_doc(Db, FullDocInfo),
-  {Body}    = couch_doc:to_json_obj(Doc, []),
-
-  Id = couch_util:get_value(<<"_id">>, Body),
-  Rev = couch_util:get_value(<<"_rev">>, Body),
-  CurrentNormpos = couch_util:get_value(<<"normpos_">>, Body, <<"0">>),
-
-  DocObject = {Body, Id, Rev, CurrentNormpos},
-
+  DocObject = couch_normalizer_util:document_object(DbName, FullDocInfo),
   ok = apply_scenario(S, DocInfo, DocObject).
 
 

@@ -10,6 +10,15 @@ defmodule CouchNormalizer.Scenario do
   end
 
 
+  defmacro doc(db, id) do
+    quote do: :couch_normalizer_util.document_body(unquote(db), unquote(id))
+  end
+
+
+  defmacro doc_field(db, id, name) do
+    quote do: field(doc(unquote(db), unquote(id)), unquote(name))
+  end
+
 
   defmacro field(body, name) do
     quote do: :proplists.get_value(to_b(unquote(name)), unquote(body), :nil)
