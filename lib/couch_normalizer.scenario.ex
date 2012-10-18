@@ -16,7 +16,10 @@ defmodule CouchNormalizer.Scenario do
 
 
   defmacro doc_field(db, id, name) do
-    quote do: field(doc(unquote(db), unquote(id)), unquote(name))
+    quote do
+      document = doc(unquote(db), unquote(id))
+      if document != :not_found, do: field(document, unquote(name))
+    end
   end
 
 

@@ -6,18 +6,25 @@
 
 document_object(DbName, DocInfoOrId) ->
   {ok, Db} = couch_db:open_int(DbName, []),
-  {ok, Doc} = couch_db:open_doc(Db, DocInfoOrId),
-  {Body}    = couch_doc:to_json_obj(Doc, []),
 
-  Id = couch_util:get_value(<<"_id">>, Body),
-  Rev = couch_util:get_value(<<"_rev">>, Body),
-  Normpos = couch_util:get_value(<<"normpos_">>, Body, <<"0">>),
+  case couch_db:open_doc(Db, DocInfoOrId) of
+    {ok, Doc} ->
+      {Body}    = couch_doc:to_json_obj(Doc, []),
 
-  {Body, Id, Rev, Normpos}.
+      Id = couch_util:get_value(<<"_id">>, Body),
+      Rev = couch_util:get_value(<<"_rev">>, Body),
+      Normpos = couch_util:get_value(<<"normpos_">>, Body, <<"0">>),
+
+      {Body, Id, Rev, Normpos};
+    _ -> not_found
+  end.
 
 
 document_body(DbName, DocInfoOrId) ->
-  {Body, _, _, _} = document_object(DbName, DocInfoOrId), Body.
+  case document_object(DbName, DocInfoOrId) of
+    {Body, _, _, _} -> Body;
+    _ -> not_found
+  end.
 
 
 current_registry() ->
