@@ -8,7 +8,10 @@ get-deps:
 	cd deps/elixir && make compile
 
 
-compile: elixir erlang
+compile: clean elixir erlang
+
+clean:
+	rm -rf ebin/ && PATH=$(PATH):$(ELIXIR_PATH) mix clean
 
 erlang:
 	./rebar compile
