@@ -11,11 +11,11 @@ erlang:
 	./rebar compile
 
 elixir:
-	mix compile
+	deps/elixir/bin/mix compile
 
 
 test: test_elixir
 
 
 test_elixir:
-	mix test
+	deps/elixir/bin/mix test
