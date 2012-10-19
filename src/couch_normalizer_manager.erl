@@ -141,9 +141,10 @@ apply_scenario(_S, _DocInfo, not_found) ->
 apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
   % find next scenario according to last normpos_ position (or start from the beginning)
   case couch_normalizer_util:next_scenario(S#scope.scenarios_ets, CurrentNormpos) of
-    {Normpos, _, Scenario} ->
+    {Normpos, Title, Scenario} ->
       case Scenario(DbName, Id, Rev, Body) of
         {update, NewBody} ->
+            ?LOG_INFO("normalize '~p' document according to '~s' scenario~n", [Id, Title]),
             % update normpos
             NormalizedBody = {proplists:delete(<<"normpos_">>, NewBody) ++ [{<<"normpos_">>, Normpos}]},
 

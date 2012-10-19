@@ -34,6 +34,13 @@ defmodule CouchNormalizer.ScenarioTest do
     assert [{"field_3", :v3}] == body
   end
 
+  test "remove_fields when one field doesn't exist" do
+    body = @fixture
+
+    remove_fields([:field, :unknown, :field_2])
+    assert [{"field_3", :v3}] == body
+  end
+
   test :rename_field do
     body = @fixture
 
