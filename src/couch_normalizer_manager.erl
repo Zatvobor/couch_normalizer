@@ -135,6 +135,9 @@ enum_scenarions(S, {DbName, _, FullDocInfo} = DocInfo) ->
   ok = apply_scenario(S, DocInfo, DocObject).
 
 
+apply_scenario(_S, _DocInfo, not_found) ->
+  ok;
+
 apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
   % find next scenario according to last normpos_ position (or start from the beginning)
   case couch_normalizer_util:next_scenario(S#scope.scenarios_ets, CurrentNormpos) of
@@ -146,7 +149,7 @@ apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
 
             % update doc
             {ok, _} = couch_db:update_doc(Db, couch_doc:from_json_obj(NormalizedBody), []),
-            ok = couch_db:close(Db),
+            couch_db:close(Db),
             % try again to apply other scenarions for that document
             ok = enum_scenarions(S, {DbName, Db, Id});
         _ ->
