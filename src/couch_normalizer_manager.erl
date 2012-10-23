@@ -69,7 +69,7 @@ handle_call({normalize, DbName}, _From, State) ->
 
       {reply, ok, State};
     none ->
-      {reply, {error, "Skipped. Can't find requested scope."}, State}
+      {reply, {error, ?l2b("Skipped. Can't find requested scope definition.")}, State}
   end.
 
   % couch_task_status:add_task([
