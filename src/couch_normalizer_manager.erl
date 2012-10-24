@@ -43,30 +43,45 @@ init(State) -> {ok, State}.
 terminate(_Reason, _State) -> ok.
 
 handle_call({normalize, DbName}, _From, State) ->
-  Label = binary_to_atom(DbName, utf8),
+  Action = fun(Label, Scope) ->
+    application:set_env(?MODULE, registry, ets:new(s, [ordered_set, {keypos,1}])),
 
+    % compile and load scenarios
+    'Elixir-CouchNormalizer-Registry':load_all(Scope#scope.scenarios_path),
+
+    % move aquired scenarions back to the given scope
+    ScenariosEts = couch_normalizer_util:current_registry(),
+    {ok, ProcessingQueue} = couch_work_queue:new([{max_items, Scope#scope.qmax_items}, {multi_workers, true}]),
+
+    % stop if it already started and/or spawn the new processing from the beginning
+    ProcessingScope = Scope#scope{label = Label, scenarios_ets = ScenariosEts, processing_queue = ProcessingQueue},
+    terminate_processing(ProcessingScope),
+    {ok, NewScope} = start_processing(ProcessingScope),
+
+    % capture the processing info in server's state
+    NewState = proplists:delete(Label, State) ++ [{Label, NewScope}],
+    Message = io_lib:format("Normalization process has been started (~p).", [NewScope#scope.processing_sup]),
+    {reply, {ok, ?l2b(Message)}, NewState}
+  end,
+  handle_scoped_call(Action, DbName, State);
+
+handle_call({cancel, DbName}, _From, State) ->
+  Action = fun(_Label, Scope) ->
+    {reply, terminate_processing(Scope), State}
+  end,
+  handle_scoped_call(Action, DbName, State).
+
+%
+% private
+%
+
+handle_scoped_call(Action, DbName, State) ->
+  Label = binary_to_atom(DbName, utf8),
   case proplists:get_value(Label, State) of
     undefined ->
       {reply, {error, ?l2b("Skipped. Can't find requested scope definition.")}, State};
     Scope ->
-      application:set_env(?MODULE, registry, ets:new(s, [ordered_set, {keypos,1}])),
-
-      % compile and load scenarios
-      'Elixir-CouchNormalizer-Registry':load_all(Scope#scope.scenarios_path),
-
-      % move aquired scenarions back to the given scope
-      ScenariosEts = couch_normalizer_util:current_registry(),
-      {ok, ProcessingQueue} = couch_work_queue:new([{max_items, Scope#scope.qmax_items}, {multi_workers, true}]),
-
-      % stop if it already started and/or spawn the new processing from the beginning
-      ProcessingScope = Scope#scope{label = Label, scenarios_ets = ScenariosEts, processing_queue = ProcessingQueue},
-      terminate_processing(ProcessingScope),
-      {ok, NewScope} = start_processing(ProcessingScope),
-
-      % capture the processing info in server's state
-      NewState = proplists:delete(Label, State) ++ [{Label, NewScope}],
-      Message = io_lib:format("Normalization process has been started (~p).", [NewScope#scope.processing_sup]),
-      {reply, {ok, ?l2b(Message)}, NewState}
+      Action(Label, Scope)
   end.
 
 

@@ -11,11 +11,18 @@
     start_chunked_response/3, send_error/4]).
 
 
-handle_normalize_req(#httpd{method='POST'}=Req, #db{name=DbName}=Db) ->
+handle_normalize_req(#httpd{method='POST',path_parts=[_,_]}=Req, #db{name=DbName}=Db) ->
   ok = couch_db:check_is_admin(Db),
   couch_httpd:validate_ctype(Req, "application/json"),
 
   A = gen_server:call(couch_normalizer_manager, {normalize, DbName}),
+  send_json(Req, 202, {[A]});
+
+handle_normalize_req(#httpd{method='POST',path_parts=[_,_,<<"cancel">>]}=Req, #db{name=DbName}=Db) ->
+  ok = couch_db:check_is_admin(Db),
+  couch_httpd:validate_ctype(Req, "application/json"),
+
+  A = gen_server:call(couch_normalizer_manager, {cancel, DbName}),
   send_json(Req, 202, {[A]});
 
 handle_normalize_req(Req, _Db) ->

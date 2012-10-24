@@ -18,7 +18,11 @@ init(Scope) ->
 
 
 terminate(S) ->
-  catch exit(S#scope.processing_sup, normal).
+  case S#scope.processing_sup of
+    undefined -> {false, undefined};
+    Pid ->
+      catch {ok, exit(Pid, normal)}
+  end.
 
 
 spawn_worker(Scope) ->
