@@ -9,20 +9,39 @@
 
 
 start_link(Scope) ->
-  supervisor:start_link(?MODULE, [Scope]).
+  supervisor:start_link(?MODULE, Scope).
 
 
-init(Scope) ->
-  Child = [{worker, {?MODULE, spawn_worker, Scope}, transient, 1000, worker, dynamic}],
+init(S) ->
+  DbName = atom_to_binary(S#scope.label, utf8),
+  % spawn producer
+  spawn(fun() ->
+    {ok, Db} = couch_db:open_int(DbName, []),
+
+    Fun = fun(FullDocInfo, _, Acc) ->
+      % move given document into the processing_queue
+      ok = couch_work_queue:queue(S#scope.processing_queue, {DbName, Db, FullDocInfo}),
+      % update status
+      gen_server:cast(S#scope.processing_status, {increment_status_param, docs_read}),
+
+      {ok, Acc}
+    end,
+
+    % close
+    ok = couch_db:close(Db),
+
+    % iterate through each document
+    {ok, _, _} = couch_db:enum_docs(Db, Fun, [], [])
+  end),
+
+  Child = [{worker, {?MODULE, spawn_worker, [S]}, transient, 1000, worker, dynamic}],
   {ok, {{simple_one_for_one, 10, 3600}, Child}}.
 
 
 terminate(S) ->
-  case S#scope.processing_sup of
-    undefined -> {false, undefined};
-    Pid ->
-      catch {ok, exit(Pid, normal)}
-  end.
+  catch exit(S#scope.processing_sup, normal),
+  catch exit(S#scope.processing_status, normal),
+  {ok, ternimated}.
 
 
 spawn_worker(Scope) ->
@@ -64,6 +83,9 @@ apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
 
             % update doc
             {ok, _} = couch_db:update_doc(Db, couch_doc:from_json_obj(NormalizedBody), []),
+            % update status
+            gen_server:cast(S#scope.processing_status, {increment_status_param, docs_normalized}),
+            % release Db
             couch_db:close(Db),
             % try again to apply other scenarions for that document
             ok = enum_scenarions(S, {DbName, Db, Id});

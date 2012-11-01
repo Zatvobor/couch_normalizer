@@ -53,12 +53,14 @@ handle_call({normalize, DbName}, _From, State) ->
     ScenariosEts = couch_normalizer_util:current_registry(),
     {ok, ProcessingQueue} = couch_work_queue:new([{max_items, Scope#scope.qmax_items}, {multi_workers, true}]),
 
-    % stop if it already started and/or spawn the new processing from the beginning
+
     ProcessingScope = Scope#scope{label = Label, scenarios_ets = ScenariosEts, processing_queue = ProcessingQueue},
+    % stop if it already started and/or spawn the new processing from the beginning
     terminate_processing(ProcessingScope),
+    % start processing flow
     {ok, NewScope} = start_processing(ProcessingScope),
 
-    % capture the processing info in server's state
+    % capture the processing scope in server's state
     NewState = proplists:delete(Label, State) ++ [{Label, NewScope}],
     Message = io_lib:format("Normalization process has been started (~p).", [NewScope#scope.processing_sup]),
     {reply, {ok, ?l2b(Message)}, NewState}
@@ -90,26 +92,12 @@ terminate_processing(Scope) ->
 
 
 start_processing(S) ->
-  DbName = atom_to_binary(S#scope.label, utf8),
-  % spawn producer
-  spawn(fun() ->
-    {ok, Db} = couch_db:open_int(DbName, []),
+  % start monitoring
+  {ok, SPid} = couch_normalizer_status:start_link(S),
+  Monitorable = S#scope{processing_status=SPid},
 
-    Fun = fun(FullDocInfo, _, Acc) ->
-      % move given document into the processing_queue
-      ok = couch_work_queue:queue(S#scope.processing_queue, {DbName, Db, FullDocInfo}),
+  % spawn processing workers
+  {ok, NPid} = couch_normalizer_process:start_link(Monitorable),
+  lists:map(fun(_) -> supervisor:start_child(NPid, []) end, lists:seq(1, S#scope.num_workers)),
 
-      {ok, Acc}
-    end,
-
-    % close
-    ok = couch_db:close(Db),
-
-    % iterate through each document
-    {ok, _, _} = couch_db:enum_docs(Db, Fun, [], [])
-  end),
-
-  % spawn workers
-  {ok, Pid} = couch_normalizer_process:start_link(S),
-  lists:map(fun(_) -> supervisor:start_child(Pid, []) end, lists:seq(1, S#scope.num_workers)),
-  {ok, S#scope{processing_sup = Pid}}.
+  {ok, Monitorable#scope{processing_sup = NPid}}.
