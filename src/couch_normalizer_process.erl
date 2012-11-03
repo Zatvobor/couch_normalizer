@@ -38,7 +38,7 @@ init(S) ->
 
     % iterates through each document
     {ok, _, _} = couch_db:enum_docs(Db, Enum, [], []),
-    gen_server:cast(S#scope.processing_status, {update_status, [{continue, false}]}),
+    gen_server:cast(S#scope.processing_status, {update_status, [{continue, false}, {finished_on, oauth_unix:timestamp()}]}),
 
     % closes Db session
     ok = couch_db:close(Db)
