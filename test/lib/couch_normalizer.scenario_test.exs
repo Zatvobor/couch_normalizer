@@ -9,8 +9,12 @@ defmodule CouchNormalizer.ScenarioTest do
   @fixture [{"field", :v}, {"field_2", :v2}, {"field_3", :v3}]
 
 
-  test :field do
+  test "unknown field" do
     assert field(@fixture, :unknown) == :nil
+    assert field(@fixture, :unknown) == nil
+  end
+
+  test :field do
     assert field(@fixture, :field) == :v
   end
 

@@ -18,8 +18,9 @@ start_link(Scope) ->
 init(S) ->
   couch_task_status:add_task([
       {type, normalization},
-      {label, S#scope.label},
+      {db, S#scope.label},
       {num_workers, S#scope.num_workers},
+      {continue, true},
       {docs_read, 0},
       {docs_normalized, 0}
   ]),
@@ -29,7 +30,7 @@ init(S) ->
   {ok, stateless}.
 
 
-handle_cast({increment_status_param, Param}, State) ->
+handle_cast({increment_value, Param}, State) ->
   [Value] = couch_task_status:get([Param]),
   couch_task_status:update([{Param, Value + 1}]),
 
@@ -40,4 +41,5 @@ handle_cast({update_status, Status}, State) ->
   {noreply, State}.
 
 
-terminate(_Reason, _State) -> ok.
+terminate(_Reason, _State) ->
+  ok.

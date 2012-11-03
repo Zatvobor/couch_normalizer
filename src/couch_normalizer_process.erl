@@ -4,7 +4,10 @@
 -include("couch_db.hrl").
 -include("couch_normalizer.hrl").
 
--export([start_link/1, init/1, terminate/1, spawn_worker/1]).
+% public API
+-export([start_link/1, terminate/1, spawn_worker/1]).
+% gen_server callbacks
+-export([init/1]).
 
 
 
@@ -12,36 +15,43 @@ start_link(Scope) ->
   supervisor:start_link(?MODULE, Scope).
 
 
+init(#scope{processing_status=undefined} = S) ->
+  % starts monitoring
+  {ok, SPid} = couch_normalizer_status:start_link(S),
+  % continues initialization
+  init(S#scope{processing_status=SPid});
+
 init(S) ->
-  DbName = atom_to_binary(S#scope.label, utf8),
-  % spawn producer
-  spawn(fun() ->
+  % spawns linked producer
+  spawn_link(fun() ->
+    DbName = atom_to_binary(S#scope.label, utf8),
     {ok, Db} = couch_db:open_int(DbName, []),
 
-    Fun = fun(FullDocInfo, _, Acc) ->
-      % move given document into the processing_queue
+    Enum = fun(FullDocInfo, _, Acc) ->
+      % moves given document into the processing_queue
       ok = couch_work_queue:queue(S#scope.processing_queue, {DbName, Db, FullDocInfo}),
-      % update status
-      gen_server:cast(S#scope.processing_status, {increment_status_param, docs_read}),
+      % updates status
+      gen_server:cast(S#scope.processing_status, {increment_value, docs_read}),
 
       {ok, Acc}
     end,
 
-    % close
-    ok = couch_db:close(Db),
+    % iterates through each document
+    {ok, _, _} = couch_db:enum_docs(Db, Enum, [], []),
+    gen_server:cast(S#scope.processing_status, {update_status, [{continue, false}]}),
 
-    % iterate through each document
-    {ok, _, _} = couch_db:enum_docs(Db, Fun, [], [])
+    % closes Db session
+    ok = couch_db:close(Db)
   end),
 
+  % definition of a child specification
   Child = [{worker, {?MODULE, spawn_worker, [S]}, transient, 1000, worker, dynamic}],
   {ok, {{simple_one_for_one, 10, 3600}, Child}}.
 
 
 terminate(S) ->
-  catch exit(S#scope.processing_sup, normal),
-  catch exit(S#scope.processing_status, normal),
-  {ok, ternimated}.
+  catch exit(S#scope.processing_sup, shutdown),
+  {ok, realsed}.
 
 
 spawn_worker(Scope) ->
@@ -84,7 +94,7 @@ apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
             % update doc
             {ok, _} = couch_db:update_doc(Db, couch_doc:from_json_obj(NormalizedBody), []),
             % update status
-            gen_server:cast(S#scope.processing_status, {increment_status_param, docs_normalized}),
+            gen_server:cast(S#scope.processing_status, {increment_value, docs_normalized}),
             % release Db
             couch_db:close(Db),
             % try again to apply other scenarions for that document

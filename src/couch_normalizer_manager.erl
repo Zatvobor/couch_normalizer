@@ -6,7 +6,6 @@
 
 % public API
 -export([start_link/1]).
-
 % gen_server callbacks
 -export([init/1, terminate/2]).
 -export([handle_call/3]). %, handle_cast/2, code_change/3, handle_info/2]).
@@ -92,12 +91,14 @@ terminate_processing(Scope) ->
 
 
 start_processing(S) ->
-  % start monitoring
-  {ok, SPid} = couch_normalizer_status:start_link(S),
-  Monitorable = S#scope{processing_status=SPid},
+  % setups supervised processing flow
+  {ok, Pid} = couch_normalizer_process:start_link(S),
+  % see couch_normalizer_process:terminate/1 implementation
+  unlink(Pid),
+  % spawns processing workers
+  Enum = fun(_) ->
+    supervisor:start_child(Pid, [])
+  end,
+  lists:map(Enum, lists:seq(1, S#scope.num_workers)),
 
-  % spawn processing workers
-  {ok, NPid} = couch_normalizer_process:start_link(Monitorable),
-  lists:map(fun(_) -> supervisor:start_child(NPid, []) end, lists:seq(1, S#scope.num_workers)),
-
-  {ok, Monitorable#scope{processing_sup = NPid}}.
+  {ok, S#scope{processing_sup = Pid}}.
