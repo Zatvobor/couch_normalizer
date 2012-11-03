@@ -25,7 +25,7 @@ init(S) ->
       {docs_normalized, 0}
   ]),
 
-  couch_task_status:set_update_frequency(1000),
+  % couch_task_status:set_update_frequency(500),
 
   {ok, stateless}.
 
