@@ -1,6 +1,6 @@
 -module(couch_normalizer_util).
 
--export([document_object/2, document_body/2, current_registry/0, next_scenario/1, next_scenario/2]).
+-export([document_object/2, document_body/2, current_registry/0, next_scenario/1, next_scenario/2, delete_document/1]).
 
 
 
@@ -25,6 +25,9 @@ document_body(DbName, DocInfoOrId) ->
     {Body, _, _, _} -> Body;
     _ -> not_found
   end.
+
+delete_document(Body) ->
+  Body ++ [{<<"_deleted">>, true}].
 
 
 current_registry() ->

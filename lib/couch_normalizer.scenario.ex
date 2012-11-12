@@ -63,9 +63,12 @@ defmodule CouchNormalizer.Scenario do
     end
   end
 
-
   defmacro create_field(name, value) do
     quote do: var!(body) = var!(body) ++ [{to_b(unquote(name)), to_b(unquote(value))}]
+  end
+  
+  defmacro delete_doc() do
+    quote do: var!(body) = :couch_normalizer_util.delete_document(var!(body))
   end
 
 
