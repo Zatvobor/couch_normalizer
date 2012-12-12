@@ -67,16 +67,16 @@ defmodule CouchNormalizer.Scenario do
     quote do: var!(body) = var!(body) ++ [{to_b(unquote(name)), to_b(unquote(value))}]
   end
 
-  defmacro delete_doc() do
+  defmacro mark_as_deleted!() do
     quote do: var!(body) = :couch_normalizer_util.mark_as_deleted(var!(body))
   end
 
-  defmacro delete_doc(db, id) do
+  defmacro remove_document!(db, id) do
     quote do
-      case doc(unquote(db), unquote(id)) do
-        :not_found -> :ok
-        document ->
-          :couch_normalizer_util.update_doc(unquote(db), :couch_normalizer_util.mark_as_deleted(document))
+      document = doc(unquote(db), unquote(id))
+      if document != :not_found do
+        :couch_normalizer_util.update_doc(unquote(db), :couch_normalizer_util.mark_as_deleted(document))
+        :ok
       end
     end
   end

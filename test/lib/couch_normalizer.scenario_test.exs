@@ -74,4 +74,13 @@ defmodule CouchNormalizer.ScenarioTest do
     assert body == [{"field", "new_value"}, {"field_1", "new_value"}, {"field_2", ["hello"]}, {"field_3", 1}]
   end
 
+
+  test :mark_as_deleted! do
+    body = @fixture
+
+    mark_as_deleted!
+
+    assert [{"field", :v}, {"field_2", :v2}, {"field_3", :v3}, {"_deleted", :true}] == body
+  end
+
 end
