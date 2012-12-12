@@ -66,11 +66,20 @@ defmodule CouchNormalizer.Scenario do
   defmacro create_field(name, value) do
     quote do: var!(body) = var!(body) ++ [{to_b(unquote(name)), to_b(unquote(value))}]
   end
-  
+
   defmacro delete_doc() do
-    quote do: var!(body) = :couch_normalizer_util.delete_document(var!(body))
+    quote do: var!(body) = :couch_normalizer_util.mark_as_deleted(var!(body))
   end
 
+  defmacro delete_doc(db, id) do
+    quote do
+      case doc(unquote(db), unquote(id)) do
+        :not_found -> :ok
+        document ->
+          :couch_normalizer_util.update_doc(unquote(db), :couch_normalizer_util.mark_as_deleted(document))
+      end
+    end
+  end
 
   def to_b(name) when is_atom(name), do: atom_to_binary(name)
   def to_b(name), do: name

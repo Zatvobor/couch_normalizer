@@ -1,6 +1,6 @@
 -module(couch_normalizer_util).
 
--export([document_object/2, document_body/2, current_registry/0, next_scenario/1, next_scenario/2, mark_as_deleted/1]).
+-export([document_object/2, document_body/2, current_registry/0, next_scenario/1, next_scenario/2, mark_as_deleted/1, update_doc/2]).
 
 
 
@@ -29,6 +29,9 @@ document_body(DbName, DocInfoOrId) ->
 mark_as_deleted(Body) ->
   Body ++ [{<<"_deleted">>, true}].
 
+update_doc(DbName, Body) ->
+  {ok, Db} = couch_db:open_int(DbName, []),
+  couch_db:update_doc(Db, couch_doc:from_json_obj({Body}),[]).
 
 current_registry() ->
   {ok, ScenariosEts} = application:get_env(couch_normalizer_manager, registry),
