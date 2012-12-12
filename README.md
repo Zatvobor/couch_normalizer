@@ -1,4 +1,4 @@
 couch_normalizer
 ================
 
-data migration appliance that worked within Couch DB node
+Data migration appliance that works within Couch DB node and could be used for normalization big amount of documents within a particular Db.
