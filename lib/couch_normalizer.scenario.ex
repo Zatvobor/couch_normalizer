@@ -64,7 +64,7 @@ defmodule CouchNormalizer.Scenario do
   end
 
   defmacro create_field(name, value) do
-    quote do: var!(body) = var!(body) ++ [{to_b(unquote(name)), to_b(unquote(value))}]
+    quote do: var!(body) = var!(body) ++ [{to_b(unquote(name)), unquote(value)}]
   end
 
   defmacro mark_as_deleted!() do
