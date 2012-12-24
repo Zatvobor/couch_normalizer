@@ -71,7 +71,7 @@ defmodule CouchNormalizer.ScenarioTest do
     create_field :field_2, ["hello"]
     create_field :field_3, 1
 
-    assert body == [{"field", "new_value"}, {"field_1", :new_value}, {"field_2", ["hello"]}, {"field_3", 1}]
+    assert body == [{"field", "new_value"}, {"field_1", "new_value"}, {"field_2", ["hello"]}, {"field_3", 1}]
   end
 
 
