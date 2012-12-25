@@ -9,16 +9,15 @@ document_object(DbName, DocInfoOrId) ->
 
   case couch_db:open_doc(Db, DocInfoOrId) of
     {ok, Doc} ->
-      {Body}    = couch_doc:to_json_obj(Doc, []),
+      {Body}  = couch_doc:to_json_obj(Doc, []),
 
-      Id = couch_util:get_value(<<"_id">>, Body),
-      Rev = couch_util:get_value(<<"_rev">>, Body),
+      Id      = couch_util:get_value(<<"_id">>, Body),
+      Rev     = couch_util:get_value(<<"_rev">>, Body),
       Normpos = couch_util:get_value(<<"normpos_">>, Body, <<"0">>),
 
       {Body, Id, Rev, Normpos};
     _ -> not_found
   end.
-
 
 document_body(DbName, DocInfoOrId) ->
   case document_object(DbName, DocInfoOrId) of
@@ -26,12 +25,21 @@ document_body(DbName, DocInfoOrId) ->
     _ -> not_found
   end.
 
+
+mark_as_deleted(not_found) ->
+  not_found;
+
 mark_as_deleted(Body) ->
   Body ++ [{<<"_deleted">>, true}].
+
+
+update_doc(_DbName, not_found) ->
+  not_found;
 
 update_doc(DbName, Body) ->
   {ok, Db} = couch_db:open_int(DbName, []),
   couch_db:update_doc(Db, couch_doc:from_json_obj({Body}),[]).
+
 
 current_registry() ->
   {ok, ScenariosEts} = application:get_env(couch_normalizer_manager, registry),

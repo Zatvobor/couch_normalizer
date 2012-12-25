@@ -42,7 +42,7 @@ defmodule CouchNormalizer.RegistryTest do
   test "load('test/1-test-scenario.exs')" do
     assert CouchNormalizer.Registry.load("test/1-test-scenario.exs") == []
     {:ok, t} = :application.get_env(:couch_normalizer_manager, :registry)
-    [h|t] = :ets.lookup(t, "1")
+    [h|_t] = :ets.lookup(t, "1")
 
     assert tuple_size(h) == 3
 
