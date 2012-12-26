@@ -1,4 +1,4 @@
--module(couch_normalizer_util).
+-module(couch_normalizer_utils).
 
 -export([document_object/2, document_body/2, current_registry/0, next_scenario/1, next_scenario/2, mark_as_deleted/1, update_doc/2]).
 

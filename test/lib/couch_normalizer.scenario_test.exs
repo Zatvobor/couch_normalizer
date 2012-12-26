@@ -3,7 +3,7 @@ Code.require_file "../../test_helper.exs", __FILE__
 defmodule CouchNormalizer.ScenarioTest do
   use ExUnit.Case, async: true
 
-  import CouchNormalizer.Scenario
+  use CouchNormalizer.Scenario
 
   @fixture [{"field", :v}, {"field_2", :v2}, {"field_3", :v3}]
 

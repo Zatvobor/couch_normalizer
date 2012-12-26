@@ -1,6 +1,5 @@
-import CouchNormalizer.Scenario
-
-CouchNormalizer.Scenario.define "1-example-scenario", fn(db, _doc_id, _rev, body) ->
+CouchNormalizer.Registry.acquire "1-example-scenario", fn(db, _doc_id, _rev, body) ->
+  use CouchNormalizer.Scenario
 
   # before filter hook
   if field(body, :type) == "user" do

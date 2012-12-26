@@ -75,7 +75,7 @@ worker_loop(S) ->
 
 
 enum_scenarions(S, {DbName, _, FullDocInfo} = DocInfo) ->
-  DocObject = couch_normalizer_util:document_object(DbName, FullDocInfo),
+  DocObject = couch_normalizer_utils:document_object(DbName, FullDocInfo),
   ok = apply_scenario(S, DocInfo, DocObject).
 
 
@@ -83,7 +83,7 @@ apply_scenario(_S, _DocInfo, not_found) -> ok;
 
 apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
   % find next scenario according to last normpos_ position (or start from the beginning)
-  case couch_normalizer_util:next_scenario(S#scope.scenarios_ets, CurrentNormpos) of
+  case couch_normalizer_utils:next_scenario(S#scope.scenarios_ets, CurrentNormpos) of
     {Normpos, Title, Scenario} ->
       case Scenario(DbName, Id, Rev, Body) of
         {update, NewBody} ->

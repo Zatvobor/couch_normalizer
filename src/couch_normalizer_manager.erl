@@ -49,7 +49,7 @@ handle_call({normalize, DbName}, _From, State) ->
     'Elixir-CouchNormalizer-Registry':load_all(Scope#scope.scenarios_path),
 
     % move aquired scenarions back to the given scope
-    ScenariosEts = couch_normalizer_util:current_registry(),
+    ScenariosEts = couch_normalizer_utils:current_registry(),
     {ok, ProcessingQueue} = couch_work_queue:new([{max_items, Scope#scope.qmax_items}, {multi_workers, true}]),
 
 

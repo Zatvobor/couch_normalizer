@@ -10,14 +10,14 @@ defmodule CouchNormalizerManagerTest do
 
 
   test "try to lookup_next" do
-    assert :couch_normalizer_util.next_scenario("yo") == nil
+    assert :couch_normalizer_utils.next_scenario("yo") == nil
   end
 
   test :lookup_next do
     assert CouchNormalizer.Registry.acquire("1-scenario", fn(x) -> x end) == true
     assert CouchNormalizer.Registry.acquire("2-scenario", fn(x) -> x end) == true
 
-    {"2", "2-scenario", f}    = :couch_normalizer_util.next_scenario("1")
+    {"2", "2-scenario", f}    = :couch_normalizer_utils.next_scenario("1")
 
     assert f.("hi there!")    == "hi there!"
     assert f.("how are you?") == "how are you?"
