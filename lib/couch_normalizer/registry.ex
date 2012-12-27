@@ -1,5 +1,10 @@
 defmodule CouchNormalizer.Registry do
 
+  @doc false
+  def init() do
+    registry = :ets.new(:s, [:ordered_set, {:keypos, 1}])
+    :application.set_env(:couch_normalizer_manager, :registry, registry)
+  end
 
   @doc false
   def acquire(title, scenario) do
@@ -19,6 +24,12 @@ defmodule CouchNormalizer.Registry do
       {:ok, to_registry}  -> :ets.insert(to_registry, {norpos, title, scenario})
       :undefined          -> raise "Env didn't initialized"
     end
+  end
+
+  @doc false
+  def to_ets() do
+    {:ok, registry} = :application.get_env(:couch_normalizer_manager, :registry)
+    registry
   end
 
   @doc false

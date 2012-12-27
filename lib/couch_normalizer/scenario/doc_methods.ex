@@ -55,7 +55,11 @@ defmodule CouchNormalizer.Scenario.DocMethods do
 
   @doc false
   def couchdb() do
-    if Mix.env == :test, do: CouchNormalizer.Scenario.under_test, else: :couch_normalizer_utils
+    if :code.is_loaded(Mix) && Mix.env == :test do
+      CouchNormalizer.Scenario.under_test
+    else
+      :couch_normalizer_utils
+    end
   end
 
   @doc false

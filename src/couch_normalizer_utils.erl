@@ -1,7 +1,6 @@
 -module(couch_normalizer_utils).
 
--export([document_object/2, document_body/2, current_registry/0, next_scenario/1, next_scenario/2, update_doc/2]).
-
+-export([document_object/2, document_body/2, next_scenario/2, update_doc/2]).
 
 
 document_object(DbName, DocInfoOrId) ->
@@ -25,21 +24,13 @@ document_body(DbName, DocInfoOrId) ->
     _ -> not_found
   end.
 
+
 update_doc(_DbName, not_found) ->
   not_found;
 
 update_doc(DbName, Body) ->
   {ok, Db} = couch_db:open_int(DbName, []),
   couch_db:update_doc(Db, couch_doc:from_json_obj({Body}),[]).
-
-
-current_registry() ->
-  {ok, ScenariosEts} = application:get_env(couch_normalizer_manager, registry),
-  ScenariosEts.
-
-
-next_scenario(Normpos) ->
-  next_scenario(current_registry(), Normpos).
 
 
 next_scenario(Ets, Normpos) when is_list(Normpos) ->
