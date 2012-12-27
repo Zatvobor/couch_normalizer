@@ -5,7 +5,7 @@ CouchNormalizer.Registry.acquire "1-example-scenario", fn(db, _doc_id, _rev, bod
   if field(body, :type) == "user" do
 
     # 1. updates/improves document structure
-    update_field    :field, String.downcase(field(body, :b))
+    update_field    :field, String.downcase(field(:b))
     rename_field    :old_name, :new_name
 
     # 2. cleanups unused/deprecated fields
@@ -19,9 +19,11 @@ CouchNormalizer.Registry.acquire "1-example-scenario", fn(db, _doc_id, _rev, bod
     create_field :number, 10
 
     # 4. reads external document
-    create_field :link, doc_field(db, "ddoc", :link)
+    create_field :link, doc_field("ddoc", :link)
+    # 4.1 gets field from another db
+    create_field :link2, doc_field("db", "ddoc", :link)
 
-    # 4.1 reads external document once and cache it.
+    # 4.2 reads external document once and cache it.
     # so further method calls (during particular normalization process) return cached value
     create_field :link, doc_field(db, "ddoc", :link, :cached!)
 
@@ -30,7 +32,7 @@ CouchNormalizer.Registry.acquire "1-example-scenario", fn(db, _doc_id, _rev, bod
       mark_as_deleted!
 
       # 6. removes some external document
-      remove_document!(db, field(body, :ticket_id))
+      remove_document!("db", field(:ticket_id))
     end
 
     # notifies the normalizer engine about changes which should be saved.

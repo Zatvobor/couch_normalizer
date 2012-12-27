@@ -1,25 +1,29 @@
-Code.require_file "../../test_helper.exs", __FILE__
+Code.require_file "../../../../test_helper.exs", __FILE__
 
-defmodule CouchNormalizer.ScenarioTest do
+defmodule CouchNormalizer.Scenario.FieldMethodsTest do
   use ExUnit.Case, async: true
 
   use CouchNormalizer.Scenario
 
-  @fixture [{"field", :v}, {"field_2", :v2}, {"field_3", :v3}]
+  @body [{"field", :v}, {"field_2", :v2}, {"field_3", :v3}]
 
 
-  test "unknown field" do
-    assert field(@fixture, :unknown) == :nil
-    assert field(@fixture, :unknown) == nil
+  test "tries to get undefined field" do
+    assert field(@body, :undefined) == :nil
+  end
+
+  test "tries to get field for current document" do
+    body = @body
+    assert field(:field) == :v
   end
 
   test :field do
-    assert field(@fixture, :field) == :v
+    assert field(@body, :field) == :v
   end
 
 
   test :remove_field do
-    body = @fixture
+    body = @body
 
     remove_field(:unknown)
     remove_field(:field)
@@ -29,23 +33,14 @@ defmodule CouchNormalizer.ScenarioTest do
   end
 
   test :remove_fields do
-    body = @fixture
+    body = @body
+    remove_fields [:unknown, :field, :field_2, :unknown]
 
-    remove_fields [:unknown, :unknown]
-    remove_fields([:field, :field_2])
-
-    assert [{"field_3", :v3}] == body
-  end
-
-  test "remove_fields when one field doesn't exist" do
-    body = @fixture
-
-    remove_fields([:field, :unknown, :field_2])
     assert [{"field_3", :v3}] == body
   end
 
   test :rename_field do
-    body = @fixture
+    body = @body
 
     rename_field(:unknown, :a)
     rename_field(:field, :new_field)
@@ -54,7 +49,7 @@ defmodule CouchNormalizer.ScenarioTest do
   end
 
   test :update_field do
-    body = @fixture
+    body = @body
 
     update_field(:unknown, :a)
     update_field(:field, :updated)
@@ -71,15 +66,6 @@ defmodule CouchNormalizer.ScenarioTest do
     create_field :field_3, 1
 
     assert body == [{"field", "new_value"}, {"field_1", :new_value}, {"field_2", ["hello"]}, {"field_3", 1}]
-  end
-
-
-  test :mark_as_deleted! do
-    body = @fixture
-
-    mark_as_deleted!
-
-    assert [{"field", :v}, {"field_2", :v2}, {"field_3", :v3}, {"_deleted", :true}] == body
   end
 
 end

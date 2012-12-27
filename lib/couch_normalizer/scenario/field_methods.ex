@@ -2,6 +2,11 @@ defmodule CouchNormalizer.Scenario.FieldMethods do
 
 
   @doc false
+  defmacro field(name) do
+    quote do: field(var!(body), unquote(name))
+  end
+
+  @doc false
   defmacro field(:not_found, _name) do
     quote do: nil
   end
