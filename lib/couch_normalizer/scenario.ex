@@ -23,7 +23,11 @@ defmodule CouchNormalizer.Scenario do
   end
 
 
-  @doc false
+  @doc """
+  Invokes particular scenario with specific document's invariants.
+  This function used as a main entry point for performing all scenarios.
+  Check `:couch_normalizer_process.apply_scenario/3` for more details.
+  """
   def call(scenario_fun, {db_name, id, rev, body}) do
     # calls scenario function
     case scenario_fun.(db_name, id, rev, HashDict.new(body)) do
