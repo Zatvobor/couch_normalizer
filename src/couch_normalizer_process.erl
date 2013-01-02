@@ -84,8 +84,8 @@ apply_scenario(_S, _DocInfo, not_found) -> ok;
 apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
   % find next scenario according to last normpos_ position (or start from the beginning)
   case couch_normalizer_utils:next_scenario(S#scope.scenarios_ets, CurrentNormpos) of
-    {Normpos, Title, Scenario} ->
-      case Scenario(DbName, Id, Rev, Body) of
+    {Normpos, Title, ScenarioFun} ->
+      case 'Elixir-CouchNormalizer-Scenario':call(ScenarioFun, {DbName, Id, Rev, Body}) of
         {update, NewBody} ->
             ?LOG_INFO("normalize '~p' document according to '~s' scenario~n", [Id, Title]),
             % update normpos

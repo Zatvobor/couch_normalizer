@@ -5,7 +5,7 @@ defmodule CouchNormalizer.Scenario.FieldMethodsTest do
 
   use CouchNormalizer.Scenario
 
-  @body [{"field", :v}, {"field_2", :v2}, {"field_3", :v3}]
+  @body HashDict.new [{"field", :v}, {"field_2", :v2}, {"field_3", :v3}]
 
 
   test "tries to get undefined field" do
@@ -29,14 +29,14 @@ defmodule CouchNormalizer.Scenario.FieldMethodsTest do
     remove_field(:field)
     remove_field("field_2")
 
-    assert [{"field_3", :v3}] == body
+    assert_equal([{"field_3", :v3}], body)
   end
 
   test :remove_fields do
     body = @body
     remove_fields [:unknown, :field, :field_2, :unknown]
 
-    assert [{"field_3", :v3}] == body
+    assert_equal([{"field_3", :v3}], body)
   end
 
   test :rename_field do
@@ -45,7 +45,7 @@ defmodule CouchNormalizer.Scenario.FieldMethodsTest do
     rename_field(:unknown, :a)
     rename_field(:field, :new_field)
 
-    assert [{"new_field", :v}, {"field_2", :v2}, {"field_3", :v3}] == body
+    assert_equal([{"field_2",:v2}, {"new_field",:v}, {"field_3",:v3}], body)
   end
 
   test :update_field do
@@ -54,18 +54,24 @@ defmodule CouchNormalizer.Scenario.FieldMethodsTest do
     update_field(:unknown, :a)
     update_field(:field, :updated)
 
-    assert body == [{"field", :updated}, {"field_2", :v2}, {"field_3", :v3}]
+    assert_equal([{"field_2",:v2}, {"field",:updated}, {"field_3",:v3}], body)
   end
 
   test :create_field do
-    body = []
+    body = HashDict.new
 
     create_field :field,   "new_value"
     create_field :field_1, :new_value
     create_field :field_2, ["hello"]
     create_field :field_3, 1
 
-    assert body == [{"field", "new_value"}, {"field_1", :new_value}, {"field_2", ["hello"]}, {"field_3", 1}]
+    assert_equal([{"field_2",["hello"]}, {"field_1",:new_value}, {"field","new_value"}, {"field_3",1}], body)
+  end
+
+
+
+  defp assert_equal(list, dict) do
+    assert list == HashDict.to_list(dict)
   end
 
 end

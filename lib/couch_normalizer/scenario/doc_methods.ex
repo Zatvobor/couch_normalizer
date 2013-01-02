@@ -10,7 +10,7 @@ defmodule CouchNormalizer.Scenario.DocMethods do
   defmacro doc(db, id) do
     quote do
       { db, id } = { unquote(db), unquote(id) }
-      couchdb.document_body(db, id)
+      HashDict.new(couchdb.document_body(db, id))
     end
   end
 
@@ -39,7 +39,7 @@ defmodule CouchNormalizer.Scenario.DocMethods do
   defmacro remove_document!(db, id) do
     quote do
       { db, id } = { unquote(db), unquote(id) }
-      doc = doc(db, id)
+      doc        = doc(db, id)
       couchdb.update_doc mark_as_deleted(doc)
     end
   end
@@ -49,9 +49,20 @@ defmodule CouchNormalizer.Scenario.DocMethods do
     quote do: var!(body) = mark_as_deleted(var!(body))
   end
 
+  @doc false
+  defmacro mark_as_deleted(body) do
+    quote do: create_field(unquote(body), "_deleted", :true)
+  end
+
+  @doc false
+  defmacro mark_as_deleted(not_found) when is_atom(not_found) do
+    quote do: :not_found
+  end
+
 
   # Internal fuctions.
   # You shouldn't call them directly from scenario.
+
 
   @doc false
   def couchdb() do
@@ -61,10 +72,5 @@ defmodule CouchNormalizer.Scenario.DocMethods do
       :couch_normalizer_utils
     end
   end
-
-  @doc false
-  def mark_as_deleted(:not_found), do: :not_found
-  @doc false
-  def mark_as_deleted(body), do: body ++ [{"_deleted", :true}]
 
 end

@@ -13,7 +13,7 @@
 
 
 start_link(Config) ->
-  % map the configuration to the server state
+  % configuration callback designed as a map function
   F = fun({Label, Options} = _E) ->
     Scope = #scope {
       label = Label,
@@ -24,12 +24,13 @@ start_link(Config) ->
     {Label, Scope}
   end,
 
+  % builds instanse state
   State = lists:map(F, Config),
 
-  % setup registry
+  % starts dependent applications
   application:start(elixir),
 
-  % spawn server instance
+  % starts process as a gen_server
   {ok, _} = gen_server:start_link({local, ?MODULE}, ?MODULE, State, []).
 
 

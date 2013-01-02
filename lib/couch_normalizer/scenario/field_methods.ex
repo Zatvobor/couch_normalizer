@@ -15,14 +15,22 @@ defmodule CouchNormalizer.Scenario.FieldMethods do
   defmacro field(body, name) do
     quote do
       { body, name } = { unquote(body), unquote(name) }
-      :proplists.get_value(to_binary(name), body, :nil)
+      HashDict.get(body, to_binary(name), :nil)
     end
   end
 
   @doc false
   defmacro remove_field(name) do
     quote do
-      var!(body) = :proplists.delete(to_binary(unquote(name)), var!(body))
+      var!(body) = remove_field(var!(body), unquote(name))
+    end
+  end
+
+  @doc false
+  defmacro remove_field(body, name) do
+    quote do
+      { body, name } = { unquote(body), unquote(name) }
+      HashDict.delete(body, to_binary(name))
     end
   end
 
@@ -44,10 +52,7 @@ defmodule CouchNormalizer.Scenario.FieldMethods do
   defmacro update_field(name, value) do
     quote do
       { name, value } = { unquote(name), unquote(value) }
-      if field(var!(body), name) do
-        remove_field name
-        var!(body) = [ {to_binary(name), value} | var!(body) ]
-      end
+      if field(name), do: create_field(name, value)
     end
   end
 
@@ -55,9 +60,9 @@ defmodule CouchNormalizer.Scenario.FieldMethods do
   defmacro update_field(name, new_name, value) do
     quote do
       { name, new_name, value } = { unquote(name), unquote(new_name), unquote(value) }
-      if field(var!(body), name) do
-        var!(body) = [ {to_binary(new_name), value} | var!(body) ]
-        remove_field name
+      if field(name) do
+        remove_field(name)
+        create_field(new_name, value)
       end
     end
   end
@@ -66,7 +71,15 @@ defmodule CouchNormalizer.Scenario.FieldMethods do
   defmacro create_field(name, value) do
     quote do
       { name, value } = { unquote(name), unquote(value) }
-       var!(body) = var!(body) ++ [{to_binary(name), value}]
+      var!(body)      = create_field(var!(body), name, value)
+    end
+  end
+
+  @doc false
+  defmacro create_field(body, name, value) do
+    quote do
+      { body, name, value } = { unquote(body), unquote(name), unquote(value)}
+      HashDict.put(body, to_binary(name), value)
     end
   end
 

@@ -36,9 +36,14 @@ defmodule CouchNormalizer.RegistryTest do
     assert :ets.last(registry)       == "3"
   end
 
+  test "tries to load a missing scenario" do
+    assert_raise ArgumentError, fn() ->
+      CouchNormalizer.Registry.load("test/missing-scenario.exs")
+    end
+  end
 
   test "load('test/1-test-scenario.exs')" do
-    assert CouchNormalizer.Registry.load("test/1-test-scenario.exs") == []
+    CouchNormalizer.Registry.load("test/1-test-scenario.exs")
 
     registry = CouchNormalizer.Registry.to_ets
     [h|_t] = :ets.lookup(registry, "1")

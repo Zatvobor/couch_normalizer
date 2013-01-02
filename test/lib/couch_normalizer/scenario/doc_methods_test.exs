@@ -6,7 +6,7 @@ defmodule CouchNormalizer.Scenario.DocMethodsTest do
   use CouchNormalizer.Scenario
 
   defmodule StubbedCouchDb do
-    def body, do: [{"field", "value"}, {"field_2", "value"}]
+    def body, do: HashDict.new [{"field", "value"}, {"field_2", "value"}]
     def document_body(_db, _id), do: body
     def update_doc(_body), do: :done!
   end
@@ -54,9 +54,10 @@ defmodule CouchNormalizer.Scenario.DocMethodsTest do
 
   test :mark_as_deleted! do
     body = @body
+
     mark_as_deleted!
 
-    assert @body ++ [{"_deleted", :true}] == body
+    assert field("_deleted") == true
   end
 
 end

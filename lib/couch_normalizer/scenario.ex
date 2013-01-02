@@ -22,6 +22,16 @@ defmodule CouchNormalizer.Scenario do
     end
   end
 
+
+  @doc false
+  def call(scenario_fun, {db_name, id, rev, body}) do
+    # calls scenario function
+    case scenario_fun.(db_name, id, rev, HashDict.new(body)) do
+      { :update, body } -> { :update, HashDict.to_list(body) }
+      _                 -> nil
+    end
+  end
+
   @doc """
   Gets the Scenario used by default under test.
   """

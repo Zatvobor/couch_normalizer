@@ -6,7 +6,7 @@ defmodule CouchNormalizer.Scenario.CachedMethodsTest do
   use CouchNormalizer.Scenario
 
   defmodule StubbedCouchDb do
-    def body, do: [{"field", "value"}, {"field_2", "value"}]
+    def body, do: HashDict.new [{"field", "value"}, {"field_2", "value"}]
     def document_body(_db, _id), do: body
     def update_doc(_body), do: :done!
   end
