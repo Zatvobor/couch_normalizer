@@ -1,6 +1,6 @@
 {application,couch_normalizer,
-             [{description,"Couch DB Normalization manager"},
-              {vsn,"git"},
+             [{description,"A massive documents migration/normalization/changes appliance. Designed as custom Couch DB httpd handler"},
+              {vsn,"0.5.0.dev"},
               {modules,['Elixir-CouchNormalizer-Registry',
                         'Elixir-CouchNormalizer-Scenario',
                         'Elixir-CouchNormalizer-Scenario-CachedMethods',
@@ -9,7 +9,7 @@
                         couch_normalizer,couch_normalizer_httpd_db,
                         couch_normalizer_manager,couch_normalizer_process,
                         couch_normalizer_status,couch_normalizer_utils]},
-              {registered,[couch_migration_manager]},
+              {registered,[couch_normalizer_manager]},
               {applications,[kernel,stdlib,couch]},
               {mod,{couch_normalizer,[]}},
               {env,[]}]}.

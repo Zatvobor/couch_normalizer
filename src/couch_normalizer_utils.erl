@@ -1,4 +1,7 @@
 -module(couch_normalizer_utils).
+%
+%  Utilities for reading/updating documents from Couch DB
+%
 
 -export([document_object/2, document_body/2, next_scenario/2, update_doc/2]).
 

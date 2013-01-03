@@ -1,19 +1,23 @@
 -module(couch_normalizer_manager).
+%
+% Module holds the logic responsible for starting and executing a particular
+% normalization process.
+%
+
 -behaviour(gen_server).
 
 -include("couch_db.hrl").
 -include("couch_normalizer.hrl").
 
-% public API
--export([start_link/1]).
-% gen_server callbacks
--export([init/1, terminate/2]).
--export([handle_call/3]). %, handle_cast/2, code_change/3, handle_info/2]).
+-export([start_link/1, init/1, terminate/2, handle_call/3]).
 
 
 
 start_link(Config) ->
-  % configuration callback designed as a map function
+  % starts dependent applications
+  application:start(elixir),
+
+  % a state factory as a callback function
   F = fun({Label, Options} = _E) ->
     Scope = #scope {
       label = Label,
@@ -24,49 +28,41 @@ start_link(Config) ->
     {Label, Scope}
   end,
 
-  % builds instanse state
+  % % starts the gen_server
   State = lists:map(F, Config),
-
-  % starts dependent applications
-  application:start(elixir),
-
-  % starts process as a gen_server
   {ok, _} = gen_server:start_link({local, ?MODULE}, ?MODULE, State, []).
 
 
 %
-% gen_server callbacks
+% normalization request handlers
 %
-
-init(State) -> {ok, State}.
-
-terminate(_Reason, _State) -> ok.
-
 handle_call({normalize, DbName}, _From, State) ->
   Action = fun(Label, Scope) ->
     % acquires (load) normalization scenarios into registry
     'Elixir-CouchNormalizer-Registry':init(),
     'Elixir-CouchNormalizer-Registry':load_all(Scope#scope.scenarios_path),
 
-    % aquires scenarions back as a ets table
+    % aquires loaded scenarions back to the process
     ScenariosEts = 'Elixir-CouchNormalizer-Registry':to_ets(),
 
-    % set ups processing queue options
+    % setups processing queue options
     {ok, ProcessingQueue} = couch_work_queue:new([{max_items, Scope#scope.qmax_items}, {multi_workers, true}]),
 
-
     ProcessingScope = Scope#scope{label = Label, scenarios_ets = ScenariosEts, processing_queue = ProcessingQueue},
-    % stop if it already started and/or spawn the new processing from the beginning
+
+    % restarts processing flow
     terminate_processing(ProcessingScope),
-    % start processing flow
     {ok, NewScope} = start_processing(ProcessingScope),
 
-    % capture the processing scope in server's state
+    % captures the processing scope in server's state
     NewState = proplists:delete(Label, State) ++ [{Label, NewScope}],
     Message = io_lib:format("Normalization process has been started (~p).", [NewScope#scope.processing_sup]),
+
     {reply, {ok, ?l2b(Message)}, NewState}
   end,
+
   handle_scoped_call(Action, DbName, State);
+
 
 handle_call({cancel, DbName}, _From, State) ->
   Action = fun(_Label, Scope) ->
@@ -74,9 +70,6 @@ handle_call({cancel, DbName}, _From, State) ->
   end,
   handle_scoped_call(Action, DbName, State).
 
-%
-% private
-%
 
 handle_scoped_call(Action, DbName, State) ->
   Label = binary_to_atom(DbName, utf8),
@@ -91,9 +84,7 @@ handle_scoped_call(Action, DbName, State) ->
 terminate_processing(Scope) ->
   couch_normalizer_process:terminate(Scope).
 
-
 start_processing(S) ->
-  % setups supervised processing flow
   {ok, Pid} = couch_normalizer_process:start_link(S),
   % see couch_normalizer_process:terminate/1 implementation
   unlink(Pid),
@@ -104,3 +95,10 @@ start_processing(S) ->
   lists:map(Enum, lists:seq(1, S#scope.num_workers)),
 
   {ok, S#scope{processing_sup = Pid}}.
+
+
+init(State) ->
+  {ok, State}.
+
+terminate(_Reason, _State) ->
+  ok.

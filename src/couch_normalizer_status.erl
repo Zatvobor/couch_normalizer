@@ -1,13 +1,14 @@
 -module(couch_normalizer_status).
+%
+% A convenience for tracking the normalization processing state.
+%
+
 -behaviour(gen_server).
 
 -include("couch_db.hrl").
 -include("couch_normalizer.hrl").
 
-% public API
--export([start_link/1]).
-% gen_server callbacks
--export([init/1, terminate/2, handle_cast/2]).
+-export([start_link/1, init/1, terminate/2, handle_cast/2]).
 
 
 
@@ -24,8 +25,6 @@ init(S) ->
       {docs_read, 0},
       {docs_normalized, 0}
   ]),
-
-  % couch_task_status:set_update_frequency(500),
 
   {ok, stateless}.
 
