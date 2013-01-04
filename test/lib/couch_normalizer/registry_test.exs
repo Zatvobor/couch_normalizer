@@ -28,12 +28,17 @@ defmodule CouchNormalizer.RegistryTest do
 
 
   test "acquire(title, scenario) multiple" do
-    Enum.each ["3-scenario", "2-scenario", "1-scenario"], CouchNormalizer.Registry.acquire(&1, fn(_x) -> nil end)
+    Enum.each ["9-scn", "22-scn", "10-scn", "3-scn", "2-scn", "1-scn"], CouchNormalizer.Registry.acquire(&1, fn(_x) -> nil end)
     registry = CouchNormalizer.Registry.to_ets
 
     assert :ets.first(registry)      == "1"
+
     assert :ets.next(registry, "1")  == "2"
-    assert :ets.last(registry)       == "3"
+    assert :ets.next(registry, "2")  == "3"
+    assert :ets.next(registry, "3")  == "9"
+    assert :ets.next(registry, "10") == "22"
+
+    assert :ets.last(registry)       == "22"
   end
 
   test "tries to load a missing scenario" do
