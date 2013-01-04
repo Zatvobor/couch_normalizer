@@ -3,7 +3,7 @@
 %  Utilities for reading/updating documents from Couch DB
 %
 
--export([document_object/2, document_body/2, next_scenario/2, update_doc/2]).
+-export([document_object/2, document_body/2, next_scenario/2, update_doc/2, increase_current/1]).
 
 
 document_object(DbName, DocInfoOrId) ->
@@ -36,10 +36,20 @@ update_doc(DbName, Body) ->
   couch_db:update_doc(Db, couch_doc:from_json_obj({Body}),[]).
 
 
-next_scenario(Ets, Normpos) when is_list(Normpos) ->
-  next_scenario(Ets, list_to_binary(Normpos));
+increase_current(Normpos) when is_binary(Normpos) ->
+  increase_current(list_to_integer(binary_to_list(Normpos)));
 
-next_scenario(Ets, Normpos) ->
+increase_current(Normpos) when is_integer(Normpos) ->
+  Normpos + 1.
+
+
+next_scenario(Ets, Normpos) when is_list(Normpos) ->
+  next_scenario(Ets, list_to_integer(Normpos));
+
+next_scenario(Ets, Normpos) when is_binary(Normpos) ->
+  next_scenario(Ets, binary_to_list(Normpos));
+
+next_scenario(Ets, Normpos) when is_integer(Normpos) ->
   case ets:next(Ets, Normpos) of
     '$end_of_table' ->
       nil;

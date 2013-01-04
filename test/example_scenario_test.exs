@@ -20,7 +20,7 @@ defmodule CouchNormalizer.ExampleScenarioTest do
   end
 
   def subject_fun() do
-    [{ _, _, subject }] = :ets.lookup(CouchNormalizer.Registry.to_ets, "1")
+    [{ _, _, subject }] = :ets.lookup(CouchNormalizer.Registry.to_ets, 1)
     subject
   end
 

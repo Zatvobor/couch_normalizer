@@ -92,10 +92,8 @@ apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
             % tries again to apply another scenarios for that document
             ok = enum_scenarions(S, {DbName, Db, Id});
         _ ->
-            % increases the current normpos value and try to apply for the current document
-            Int = list_to_integer(binary_to_list(CurrentNormpos)),
-            NextNormpos = list_to_binary(integer_to_list(Int + 1)),
-
+            % increases the current normpos value and try to find the next scenario
+            NextNormpos = couch_normalizer_utils:increase_current(CurrentNormpos),
             ok = apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, NextNormpos})
       end;
     nil -> ok

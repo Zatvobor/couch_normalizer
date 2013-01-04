@@ -21,7 +21,7 @@ defmodule CouchNormalizer.Registry do
   @doc false
   def acquire(norpos, title, scenario) do
     case :application.get_env(:couch_normalizer_manager, :registry) do
-      {:ok, to_registry}  -> :ets.insert(to_registry, {norpos, title, scenario})
+      {:ok, to_registry}  -> :ets.insert(to_registry, {binary_to_integer(norpos), title, scenario})
       :undefined          -> raise "Env didn't initialized"
     end
   end
