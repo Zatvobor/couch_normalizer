@@ -1,1 +1,1 @@
-A massive documents migration/normalization/changes appliance. Designed as custom Couch DB httpd handler.
+A massive appliance for documents migration/normalization/changes. Designed as custom Couch DB httpd handler.
