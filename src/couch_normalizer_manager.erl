@@ -38,17 +38,10 @@ start_link(Config) ->
 %
 handle_call({normalize, DbName}, _From, State) ->
   Action = fun(Label, Scope) ->
-    % acquires (load) normalization scenarios into registry
-    'Elixir-CouchNormalizer-Registry':init(),
-    'Elixir-CouchNormalizer-Registry':load_all(Scope#scope.scenarios_path),
-
-    % aquires loaded scenarions back to the process
-    ScenariosEts = 'Elixir-CouchNormalizer-Registry':to_ets(),
-
     % setups processing queue options
     {ok, ProcessingQueue} = couch_work_queue:new([{max_items, Scope#scope.qmax_items}, {multi_workers, true}]),
 
-    ProcessingScope = Scope#scope{label = Label, scenarios_ets = ScenariosEts, processing_queue = ProcessingQueue},
+    ProcessingScope = Scope#scope{label = Label, processing_queue = ProcessingQueue},
 
     % restarts processing flow
     terminate_processing(ProcessingScope),

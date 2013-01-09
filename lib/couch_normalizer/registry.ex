@@ -2,7 +2,7 @@ defmodule CouchNormalizer.Registry do
 
   @doc false
   def init() do
-    registry = :ets.new(:s, [:ordered_set, {:keypos, 1}])
+    registry = :ets.new(__MODULE__, [:ordered_set, {:keypos, 1}])
     :application.set_env(:couch_normalizer_manager, :registry, registry)
   end
 

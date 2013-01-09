@@ -17,19 +17,29 @@ start_link(Scope) ->
 
 
 init(#scope{processing_status=undefined} = S) ->
-  % starts monitoring
-  {ok, SPid} = couch_normalizer_status:start_link(S),
-  % continues initialization
-  init(S#scope{processing_status=SPid});
+  % starts status monitoring server
+  {ok, Pid} = couch_normalizer_status:start_link(S),
+
+  init(S#scope{processing_status=Pid});
+
+init(#scope{scenarios_ets=undefined} = S) ->
+  % acquires (load) normalization scenarios into registry
+  'Elixir-CouchNormalizer-Registry':init(),
+  'Elixir-CouchNormalizer-Registry':load_all(S#scope.scenarios_path),
+
+  % aquires loaded scenarions back to the process
+  ScenariosEts = 'Elixir-CouchNormalizer-Registry':to_ets(),
+
+  init(S#scope{scenarios_ets=ScenariosEts});
 
 init(S) ->
-  % spawns linked producer.
+  % spawns document reader process
   spawn_link(fun() ->
     DbName = atom_to_binary(S#scope.label, utf8),
     {ok, Db} = couch_db:open_int(DbName, []),
 
     Enum = fun(FullDocInfo, _, Acc) ->
-      % enqueues each document
+      % enqueues each document to queue
       ok = couch_work_queue:queue(S#scope.processing_queue, {DbName, Db, FullDocInfo}),
       gen_server:cast(S#scope.processing_status, {increment_value, docs_read}),
 
@@ -48,7 +58,7 @@ init(S) ->
 
 terminate(S) ->
   catch exit(S#scope.processing_sup, shutdown),
-  {ok, realsed}.
+  {ok, terminated}.
 
 
 spawn_worker(Scope) ->
