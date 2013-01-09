@@ -32,6 +32,12 @@ init(#scope{scenarios_ets=undefined} = S) ->
 
   init(S#scope{scenarios_ets=ScenariosEts});
 
+init(#scope{processing_queue=undefined} = S) ->
+  % setups processing queue options
+  {ok, ProcessingQueue} = couch_work_queue:new([{max_items, S#scope.qmax_items}, {multi_workers, true}]),
+
+  init(S#scope{processing_queue = ProcessingQueue});
+
 init(S) ->
   % spawns document reader process
   spawn_link(fun() ->

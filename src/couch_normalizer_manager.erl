@@ -18,7 +18,7 @@ start_link(Config) ->
   application:start(elixir),
 
   % a state factory as a callback function
-  F = fun({Label, Options} = _E) ->
+  Action = fun({Label, Options} = _E) ->
     Scope = #scope {
       label = Label,
       scenarios_path = couch_util:get_value(scenarios_path, Options, "/usr/local/etc/couchdb/scenarions"),
@@ -29,7 +29,7 @@ start_link(Config) ->
   end,
 
   % % starts the gen_server
-  State = lists:map(F, Config),
+  State = lists:map(Action, Config),
   {ok, _} = gen_server:start_link({local, ?MODULE}, ?MODULE, State, []).
 
 
@@ -39,9 +39,10 @@ start_link(Config) ->
 handle_call({normalize, DbName}, _From, State) ->
   Action = fun(Label, Scope) ->
     % setups processing queue options
-    {ok, ProcessingQueue} = couch_work_queue:new([{max_items, Scope#scope.qmax_items}, {multi_workers, true}]),
+    % {ok, ProcessingQueue} = couch_work_queue:new([{max_items, Scope#scope.qmax_items}, {multi_workers, true}]),
 
-    ProcessingScope = Scope#scope{label = Label, processing_queue = ProcessingQueue},
+    % ProcessingScope = Scope#scope{label = Label, processing_queue = ProcessingQueue},
+    ProcessingScope = Scope#scope{label = Label},
 
     % restarts processing flow
     terminate_processing(ProcessingScope),
