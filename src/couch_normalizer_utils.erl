@@ -3,7 +3,7 @@
 %  Utilities for reading/updating documents from Couch DB
 %
 
--export([document_object/2, document_body/2, next_scenario/2, update_doc/2, increase_current/1, make_normpost_list/2]).
+-export([document_object/2, document_body/2, next_scenario/2, update_doc/2, increase_current/1, replace_rev_history_list/2]).
 
 
 document_object(DbName, DocInfoOrId) ->
@@ -12,11 +12,11 @@ document_object(DbName, DocInfoOrId) ->
   case couch_db:open_doc(Db, DocInfoOrId) of
     {ok, Doc} ->
       {Body}  = couch_doc:to_json_obj(Doc, []),
-      {NormposList} = couch_util:get_value(<<"rev_history_">>, Body, {[{<<"normpos_">>, <<"0">>}]}),
+      {RevHistory} = couch_util:get_value(<<"rev_history_">>, Body, {[{<<"normpos">>, 0}]}),
 
       Id      = couch_util:get_value(<<"_id">>, Body),
       Rev     = couch_util:get_value(<<"_rev">>, Body),
-      Normpos = couch_util:get_value(<<"normpos_">>, NormposList, 0),
+      Normpos = couch_util:get_value(<<"normpos">>, RevHistory, 0),
 
       {Body, Id, Rev, Normpos};
     _ -> not_found
@@ -58,5 +58,8 @@ next_scenario(Ets, Normpos) when is_integer(Normpos) ->
       ets:lookup(Ets, Key), H
   end.
 
-make_normpost_list(Title, Normpos) ->
-  [{<<"rev_history_">>, {[{<<"title">>, Title},{<<"normpos_">>, Normpos}]}}].
+replace_rev_history_list(Body, RevHistory) ->
+  proplists:delete(<<"rev_history_">>, Body) ++ rev_history_list(RevHistory).
+
+rev_history_list({Title, Normpos} = _RevHistory) ->
+  [{<<"rev_history_">>, {[{<<"title">>, Title},{<<"normpos">>, Normpos}]}}].

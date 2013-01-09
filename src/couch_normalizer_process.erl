@@ -81,8 +81,8 @@ apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
         {update, NewBody} ->
             ?LOG_INFO("normalize '~p' document according to '~s' scenario~n", [Id, Title]),
 
-            % updates normpos position
-            NormalizedBody = {proplists:delete(<<"rev_history_">>, NewBody) ++ couch_normalizer_utils:make_normpost_list(Title, Normpos)},
+            % updates rev_history_ field
+            NormalizedBody = {couch_normalizer_utils:replace_rev_history_list(NewBody, {Title, Normpos})},
             % updates modified document
             {ok, _} = couch_db:update_doc(Db, couch_doc:from_json_obj(NormalizedBody), []),
             % updates execution status
