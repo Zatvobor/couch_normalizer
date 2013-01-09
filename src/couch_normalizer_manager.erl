@@ -1,16 +1,13 @@
 -module(couch_normalizer_manager).
 %
-% Module holds the logic responsible for starting and executing a particular
-% normalization process.
+% This module is responsible for managing normalization.
 %
-
 -behaviour(gen_server).
 
 -include("couch_db.hrl").
 -include("couch_normalizer.hrl").
 
 -export([start_link/1, init/1, terminate/2, handle_call/3]).
-
 
 
 start_link(Config) ->
@@ -20,10 +17,9 @@ start_link(Config) ->
   % a state factory as a callback function
   Action = fun({Label, Options} = _E) ->
     Scope = #scope {
-      label = Label,
+      label          = Label,
       scenarios_path = couch_util:get_value(scenarios_path, Options, "/usr/local/etc/couchdb/scenarions"),
-      num_workers    = couch_util:get_value(num_workers, Options, 3),
-      qmax_items     = couch_util:get_value(qmax_items, Options, 100)
+      num_workers    = couch_util:get_value(num_workers, Options, 3)
     },
     {Label, Scope}
   end,
@@ -38,10 +34,6 @@ start_link(Config) ->
 %
 handle_call({normalize, DbName}, _From, State) ->
   Action = fun(Label, Scope) ->
-    % setups processing queue options
-    % {ok, ProcessingQueue} = couch_work_queue:new([{max_items, Scope#scope.qmax_items}, {multi_workers, true}]),
-
-    % ProcessingScope = Scope#scope{label = Label, processing_queue = ProcessingQueue},
     ProcessingScope = Scope#scope{label = Label},
 
     % restarts processing flow

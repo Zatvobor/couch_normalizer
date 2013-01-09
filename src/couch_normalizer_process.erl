@@ -1,15 +1,13 @@
 -module(couch_normalizer_process).
 %
-% Module responsible for doing the normalization
+% This module is responsible for doing the normalization.
 %
-
 -behaviour(supervisor).
 
 -include("couch_db.hrl").
 -include("couch_normalizer.hrl").
 
 -export([start_link/1, init/1, terminate/1, spawn_worker/1]).
-
 
 
 start_link(Scope) ->
@@ -34,7 +32,7 @@ init(#scope{scenarios_ets=undefined} = S) ->
 
 init(#scope{processing_queue=undefined} = S) ->
   % setups processing queue options
-  {ok, ProcessingQueue} = couch_work_queue:new([{max_items, S#scope.qmax_items}, {multi_workers, true}]),
+  {ok, ProcessingQueue} = couch_work_queue:new([{multi_workers, true}]),
 
   init(S#scope{processing_queue = ProcessingQueue});
 
@@ -44,22 +42,23 @@ init(S) ->
     DbName = atom_to_binary(S#scope.label, utf8),
     {ok, Db} = couch_db:open_int(DbName, []),
 
-    Enum = fun(FullDocInfo, _, Acc) ->
-      % enqueues each document to queue
-      ok = couch_work_queue:queue(S#scope.processing_queue, {DbName, Db, FullDocInfo}),
-      gen_server:cast(S#scope.processing_status, {increment_value, docs_read}),
+    QueueFun = fun(FullDocInfo, _, Acc) ->
+      couch_work_queue:queue(S#scope.processing_queue, {DbName, Db, FullDocInfo}),
+      couch_normalizer_status:increment_docs_read(S#scope.processing_status),
 
       {ok, Acc}
     end,
 
-    {ok, _, _} = couch_db:enum_docs(Db, Enum, [], []),
-    gen_server:cast(S#scope.processing_status, {update_status, [{continue, false}, {finished_on, oauth_unix:timestamp()}]}),
+    couch_db:enum_docs(Db, QueueFun, [], []),
 
-    ok = couch_db:close(Db)
+    couch_db:close(Db),
+    couch_work_queue:close(S#scope.processing_queue),
+
+    couch_normalizer_status:update_continue_false(S#scope.processing_status)
   end),
 
-  Child = [{worker, {?MODULE, spawn_worker, [S]}, transient, 1000, worker, dynamic}],
-  {ok, {{simple_one_for_one, 10, 3600}, Child}}.
+  ChildSpec = [{worker, {?MODULE, spawn_worker, [S]}, transient, 1000, worker, dynamic}],
+  {ok, {{simple_one_for_one, 10, 3600}, ChildSpec}}.
 
 
 terminate(S) ->
@@ -73,21 +72,20 @@ spawn_worker(Scope) ->
 
 worker_loop(S) ->
   case couch_work_queue:dequeue(S#scope.processing_queue, 1) of
-    % applies scenario
     {ok, [DocInfo]} ->
-      enum_scenarions(S, DocInfo),
+      apply_scenario(S, DocInfo),
       worker_loop(S);
-    % stops processing in case when processing_queue closed
     closed -> stoped
   end.
 
 
-enum_scenarions(S, {DbName, _, FullDocInfo} = DocInfo) ->
+apply_scenario(S, {DbName, _, FullDocInfo} = DocInfo) ->
   DocObject = couch_normalizer_utils:document_object(DbName, FullDocInfo),
   ok = apply_scenario(S, DocInfo, DocObject).
 
 
-apply_scenario(_S, _DocInfo, not_found) -> ok;
+apply_scenario(_S, _DocInfo, not_found) ->
+  ok;
 
 apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
   % finds the next scenario according to the last normpos_ position (or start apply scenarios from the beginning)
@@ -106,7 +104,7 @@ apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
             couch_db:close(Db),
 
             % tries again to apply another scenarios for that document
-            ok = enum_scenarions(S, {DbName, Db, Id});
+            ok = apply_scenario(S, {DbName, Db, Id});
         _ ->
             % increases the current normpos value and try to find the next scenario
             NextNormpos = couch_normalizer_utils:increase_current(CurrentNormpos),

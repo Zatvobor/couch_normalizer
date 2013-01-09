@@ -1,20 +1,25 @@
 -module(couch_normalizer_status).
 %
-% A convenience for tracking the normalization processing state.
+% A convenience for tracking the normalization execution state.
 %
-
 -behaviour(gen_server).
 
 -include("couch_db.hrl").
 -include("couch_normalizer.hrl").
 
+-export([increment_docs_read/1, update_continue_false/1]).
 -export([start_link/1, init/1, terminate/2, handle_cast/2]).
 
+
+increment_docs_read(S) ->
+  gen_server:cast(S, {increment_value, docs_read}).
+
+update_continue_false(S) ->
+  gen_server:cast(S, {update_status, [{continue, false}, {finished_on, oauth_unix:timestamp()}]}).
 
 
 start_link(Scope) ->
   gen_server:start_link(?MODULE, Scope, []).
-
 
 init(S) ->
   couch_task_status:add_task([
