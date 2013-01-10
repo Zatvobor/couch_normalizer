@@ -46,7 +46,6 @@ defmodule CouchNormalizer.ExampleScenarioTest do
     # should be normalized by @subject scenario
     document = [ {"type", "user"} ] ++ removed_fields ++ updated_fields ++ created_fields
     { :update, body } = CouchNormalizer.Scenario.call(subject_fun, {"db", "ddoc", "rev", document})
-    body = HashDict.new body
 
     # should be removed
     assert_fields_should_be removed_fields, fn({k,_v}) -> body[k] == :nil end

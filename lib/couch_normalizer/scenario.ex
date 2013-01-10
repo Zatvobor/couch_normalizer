@@ -30,10 +30,7 @@ defmodule CouchNormalizer.Scenario do
   """
   def call(scenario_fun, {db_name, id, rev, body}) do
     # calls scenario function
-    case scenario_fun.(db_name, id, rev, HashDict.new(body)) do
-      { :update, body } -> { :update, HashDict.to_list(body) }
-      _                 -> nil
-    end
+    scenario_fun.(db_name, id, rev, HashDict.new(body))
   end
 
   @doc """

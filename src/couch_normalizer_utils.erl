@@ -11,7 +11,7 @@ document_object(DbName, DocInfoOrId) ->
 
   case couch_db:open_doc(Db, DocInfoOrId) of
     {ok, Doc} ->
-      {Body}  = couch_doc:to_json_obj(Doc, []),
+      {Body}       = couch_doc:to_json_obj(Doc, []),
       {RevHistory} = couch_util:get_value(<<"rev_history_">>, Body, {[{<<"normpos">>, 0}]}),
 
       Id      = couch_util:get_value(<<"_id">>, Body),
@@ -59,7 +59,7 @@ next_scenario(Ets, Normpos) when is_integer(Normpos) ->
   end.
 
 replace_rev_history_list(Body, RevHistory) ->
-  proplists:delete(<<"rev_history_">>, Body) ++ rev_history_list(RevHistory).
+  dict:store(<<"rev_history_">>, rev_history_list(RevHistory), Body).
 
 rev_history_list({Title, Normpos} = _RevHistory) ->
-  [{<<"rev_history_">>, {[{<<"title">>, Title},{<<"normpos">>, Normpos}]}}].
+  {[{<<"title">>, Title},{<<"normpos">>, Normpos}]}.
