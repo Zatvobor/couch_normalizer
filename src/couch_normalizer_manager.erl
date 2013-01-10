@@ -7,7 +7,7 @@
 -include("couch_db.hrl").
 -include("couch_normalizer.hrl").
 
--export([start_link/1, init/1, terminate/2, handle_call/3]).
+-export([start_link/1, init/1, terminate/2, handle_call/3, handle_cast/2, handle_info/2, code_change/3]).
 
 
 start_link(Config) ->
@@ -29,9 +29,10 @@ start_link(Config) ->
   {ok, _} = gen_server:start_link({local, ?MODULE}, ?MODULE, State, []).
 
 
-%
-% normalization request handlers
-%
+init(State) ->
+  {ok, State}.
+
+
 handle_call({normalize, DbName}, _From, State) ->
   Action = fun(Label, Scope) ->
     ProcessingScope = Scope#scope{label = Label},
@@ -67,9 +68,6 @@ handle_scoped_call(Action, DbName, State) ->
   end.
 
 
-terminate_processing(Scope) ->
-  couch_normalizer_process:terminate(Scope).
-
 start_processing(S) ->
   {ok, Pid} = couch_normalizer_process:start_link(S),
   % see couch_normalizer_process:terminate/1 implementation
@@ -83,8 +81,29 @@ start_processing(S) ->
   {ok, S#scope{processing_sup = Pid}}.
 
 
-init(State) ->
+terminate_processing(Scope) ->
+  couch_normalizer_process:terminate(Scope).
+
+
+handle_cast(_Request, State) ->
+  %% The function is there for the behaviour,
+  %% but will not be used. Only a version on the next
+  {noreply, State}.
+
+
+handle_info(_Info, State) ->
+  %% The function is there for the behaviour,
+  %% but will not be used. Only a version on the next
+  {noreply, State}.
+
+
+code_change(_OldVsn, State, _Extra) ->
+  %% The function is there for the behaviour,
+  %% but will not be used. Only a version on the next
   {ok, State}.
 
+
 terminate(_Reason, _State) ->
+  %% The function is there for the behaviour,
+  %% but will not be used. Only a version on the next
   ok.
