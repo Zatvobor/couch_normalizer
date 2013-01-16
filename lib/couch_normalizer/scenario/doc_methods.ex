@@ -50,13 +50,13 @@ defmodule CouchNormalizer.Scenario.DocMethods do
   end
 
   @doc false
-  defmacro mark_as_deleted(body) do
-    quote do: create_field(unquote(body), "_deleted", :true)
+  defmacro mark_as_deleted(not_found) when is_atom(not_found) do
+    quote do: :not_found
   end
 
   @doc false
-  defmacro mark_as_deleted(not_found) when is_atom(not_found) do
-    quote do: :not_found
+  defmacro mark_as_deleted(body) do
+    quote do: create_field(unquote(body), "_deleted", :true)
   end
 
 
