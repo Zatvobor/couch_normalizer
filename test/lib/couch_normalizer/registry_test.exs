@@ -48,17 +48,16 @@ defmodule CouchNormalizer.RegistryTest do
     end
   end
 
-  test "load('test/1-test-scenario.exs')" do
-    CouchNormalizer.Registry.load("test/1-test-scenario.exs")
+  @subject "examples/1-example-scenario.exs"
 
-    registry = CouchNormalizer.Registry.to_ets
-    [h|_t] = :ets.lookup(registry, 1)
+  test "loads a '#{@subject}' scenario" do
+    CouchNormalizer.Registry.load @subject
 
-    assert tuple_size(h) == 3
+    [{ normpos, title, fun }] = :ets.lookup(CouchNormalizer.Registry.to_ets, 1)
 
-    assert List.member?(tuple_to_list(h), 1) == true
-    assert List.member?(tuple_to_list(h), "1-test-scenario") == true
-    assert is_function(List.last(tuple_to_list(h)))
+    assert normpos == 1
+    assert title == "1-example-scenario"
+    assert is_function(fun)
   end
 
 end

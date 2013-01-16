@@ -28,9 +28,9 @@ defmodule CouchNormalizer.Scenario do
   This function used as a main entry point for performing all scenarios.
   Check `:couch_normalizer_process.apply_scenario/3` for more details.
   """
-  def call(scenario_fun, {db_name, id, rev, body}) do
+  def call(scenario, {db, id, rev, body}) when is_function(scenario) do
     # calls scenario function
-    scenario_fun.(db_name, id, rev, HashDict.new(body))
+    scenario.(db, id, rev, HashDict.new(body))
   end
 
   @doc """
