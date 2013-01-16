@@ -7,6 +7,12 @@ defmodule CouchNormalizer.Registry do
   end
 
   @doc false
+  def release() do
+    :ets.delete to_ets()
+    :application.set_env(:couch_normalizer_manager, :registry, :undefined)
+  end
+
+  @doc false
   def acquire(title, scenario) do
     matches = Regex.run %r/(\d+)-/, title
 
