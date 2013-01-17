@@ -33,7 +33,7 @@ CouchNormalizer.Registry.acquire "1-example-scenario", fn(db, _doc_id, _rev, bod
       remove_document!("db", field(:ticket_id))
     end
 
-    # Finally, notifies the normalizer engine about changes which should be stored (update document).
+    # Finally, notifies the normalizer engine about changes which should be applied (it updates a document).
     {:update, body}
   end
 end
