@@ -5,10 +5,21 @@ at Datahogs we're using `Couch Normalizer` (it's a result of our challenges) as 
 
 `Couch Normalizer` designed as a standard Couch DB httpd handler (it means that you have a RESTfull interface for interoperability) and uses Rails db migration approach. Written both in Erlang and Elixir. Works well on production and has a great IO performance.
 
-As a result, it allows a developer to deploy migration scripts (aka scenarios) and changes big amount of documents as fast as possible without HTTP overhead and certain 'delayed jobs'.
+As a result, it allows a developer to deploy migration scripts (aka scenarios) and change big amount of documents as fast as possible without HTTP overhead and certain 'delayed jobs'.
 
 
-[Example Scenario DSL](https://github.com/datahogs/couch_normalizer/blob/master/examples/1-example-scenario.exs)
+Indicative performance (non trivial case)
+----------------------------------------
+
+    # average document size: 67.19Kb
+    # runtime: 43 minutes and 41 seconds (2621)
+    [{ "docs_normalized":347144, "docs_read":21634631, "started_on":1357306518, "finished_on":1357309139, "num_workers":20 }]
+
+    # runtime: 27 minutes and 45 seconds (1665)
+    [{ "docs_normalized":17, "docs_read":21634631, "started_on":1357656809, "finished_on":1357658474, "num_workers":20 }]
+
+
+[Scenario example](https://github.com/datahogs/couch_normalizer/blob/master/examples/1-example-scenario.exs)
 ----------------------------------------------------------------------------------------------------------------
 
 Imagine, you manage a big DB with multiple document type ('user', 'track', 'album', 'artist' and so on) and you have to improve/change structure for all 'user' documents once or just only for couple of recent documents.
@@ -55,10 +66,58 @@ Let's consider an example:
         end
       end
 
-In short, `CouchNormalizer.Registry.acquire/2` accepts scenario `title` and `callback` function which will be applied for each document inside your DB. Whether `callback` returns `{:update, body}` where `body` is a new version of document, then `Couch Normalizer` will update this document.
+In short, `CouchNormalizer.Registry.acquire/2` accepts scenario `title` and `callback` function which will be applied for each document inside your DB. Whether `callback` returns `{:update, body}` where `body` is a updated document, then `Couch Normalizer` will update this document immediately.
 
 Each normalized document has a special `rev_history_` field which contains recent normalization info:
 
       "rev_history_" => {"title" => "1-example-scenario", "normpos" => 1}
 
 Actually, `normpos` is a anchor and means that some document meets some scenario. So, for further normalization only 'user' documents without `"normpos" => 1` will be processed and updated.
+
+
+Scenario DSL API
+----------------
+
+A [CouchNormalizer.Scenario](https://github.com/datahogs/couch_normalizer/blob/master/lib/couch_normalizer/scenario.ex) module would be a good start point.
+
+
+Normalization HTTP API
+----------------------
+
+Check the [couch_normalizer_httpd_db](https://github.com/datahogs/couch_normalizer/blob/master/src/couch_normalizer_httpd_db.erl) module for examples and documentation.
+
+
+Installation Quickstart
+-----------------------
+
+After downloading, type:
+
+    make setup # get-deps compile test
+    make get-couchdb-deps # Optional: clone couch db 1.2.x git from apache repos if you want to use a Couch DB as dependency.
+
+After passed tests, you will be ready for final configuration step:
+
+put in `elixir` and `couch_normalizer` to `couchdb` bash
+
+    ELIXIR_PA_OPTIONS="-pa /var/www/couch_normalizer/current/deps/elixir/lib/elixir/ebin"
+    COUCH_NORMALIZER_PA_OPTIONS="-pa /var/www/couch_normalizer/current/ebin"
+    ERL_START_OPTIONS="$ERL_OS_MON_OPTIONS -sasl errlog_type error +K true +A 4 $ELIXIR_PA_OPTIONS $COUCH_NORMALIZER_PA_OPTIONS"
+
+configure Couch DB `local.ini` config
+
+    [httpd_db_handlers]
+    _normalize = {couch_normalizer_httpd_db, handle_normalize_req}
+
+    [daemons]
+    couch_normalizer_manager={couch_normalizer_manager, start_link, [[{seed_labeled, [{scenarios_path, "/path/to/scenarios"}, {num_workers, 5}]}]]}
+
+
+That is it. Stay tuned!
+
+
+
+License
+-------
+
+`Couch Normalizer` source code is released under Apache 2 License.
+Check LICENSE and NOTICE files for more information.

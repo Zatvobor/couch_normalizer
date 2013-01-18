@@ -1,12 +1,14 @@
 ELIXIR_PATH := deps/elixir/bin
 
-setup: get-deps compile
+setup: get-deps compile test
+
+
+get-couchdb-deps:
+	cd deps && git clone -b 1.2.x git://github.com/apache/couchdb.git
 
 get-deps:
 	./rebar get-deps
-	cd deps && git clone -b 1.2.x git://github.com/apache/couchdb.git
 	cd deps/elixir && make compile
-
 
 compile: clean elixir erlang
 
