@@ -15,7 +15,7 @@ defmodule CouchNormalizer.Scenario.FieldMethods do
   defmacro field(body, name) do
     quote do
       { body, name } = { unquote(body), unquote(name) }
-      CouchNormalizer.HashDict.get(body, to_binary(name), :nil)
+      HashDict.get(body, to_binary(name), :nil)
     end
   end
 
@@ -30,7 +30,7 @@ defmodule CouchNormalizer.Scenario.FieldMethods do
   defmacro remove_field(body, name) do
     quote do
       { body, name } = { unquote(body), unquote(name) }
-      CouchNormalizer.HashDict.delete(body, to_binary(name))
+      HashDict.delete(body, to_binary(name))
     end
   end
 
@@ -79,7 +79,7 @@ defmodule CouchNormalizer.Scenario.FieldMethods do
   defmacro create_field(body, name, value) do
     quote do
       { body, name, value } = { unquote(body), unquote(name), unquote(value)}
-      CouchNormalizer.HashDict.put(body, to_binary(name), value)
+      HashDict.put(body, to_binary(name), value)
     end
   end
 

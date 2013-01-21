@@ -92,7 +92,7 @@ apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
   case couch_normalizer_utils:next_scenario(S#scope.scenarios_ets, CurrentNormpos) of
     {Normpos, Title, ScenarioFun} ->
       case 'Elixir-CouchNormalizer-Scenario':call(ScenarioFun, {DbName, Id, Rev, Body}) of
-        {update, { _, BodyDict }} ->
+        {update, BodyDict} ->
             ?LOG_INFO("normalize '~p' document according to '~s' scenario~n", [Id, Title]),
 
             % updates rev_history_ field

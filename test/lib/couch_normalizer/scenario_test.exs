@@ -14,7 +14,7 @@ defmodule CouchNormalizer.ScenarioTest do
     scenario_fun = fn(_db_name, _id, _rev, body) -> {:update, body} end
 
     { :update, body } = CouchNormalizer.Scenario.call(scenario_fun, {"db", "ddoc", "rev", [{"_id", "ddoc"}]})
-    body = CouchNormalizer.HashDict.to_list body
+    body = HashDict.to_list body
     assert body == [{"_id", "ddoc"}]
   end
 end

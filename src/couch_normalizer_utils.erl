@@ -33,12 +33,7 @@ update_doc(_DbName, not_found) ->
   not_found;
 
 update_doc(DbName, Body) when is_tuple(Body) ->
-  case Body of
-    {'Elixir-CouchNormalizer-HashDict', Dict} ->
-      update_doc(DbName, dict:to_list(Dict));
-    _ ->
-      update_doc(DbName, dict:to_list(Body))
-  end;
+  update_doc(DbName, Body:to_list());
 
 update_doc(DbName, Body) when is_list(Body) ->
   {ok, Db} = couch_db:open_int(DbName, []),
@@ -67,7 +62,7 @@ next_scenario(Ets, Normpos) when is_integer(Normpos) ->
   end.
 
 replace_rev_history_list(Body, RevHistory) ->
-  dict:store(<<"rev_history_">>, rev_history_list(RevHistory), Body).
+  'Elixir-HashDict':put(Body,<<"rev_history_">>, rev_history_list(RevHistory)).
 
 rev_history_list({Title, Normpos} = _RevHistory) ->
   {[{<<"title">>, Title},{<<"normpos">>, Normpos}]}.
