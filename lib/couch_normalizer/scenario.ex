@@ -30,7 +30,7 @@ defmodule CouchNormalizer.Scenario do
   """
   def call(scenario, {db, id, rev, body}) when is_function(scenario) do
     # calls scenario function
-    scenario.(db, id, rev, HashDict.new(body))
+    scenario.(db, id, rev, CouchNormalizer.HashDict.new(body))
   end
 
   @doc """

@@ -7,7 +7,7 @@ defmodule CouchNormalizer.ExampleScenarioTest do
   defmodule StubbedCouchDb do
     def body, do: [ {"link", "example.com"} ]
     def document_body(_db, _id), do: body
-    def update_doc(_body), do: :done!
+    def update_doc(_db, _body), do: :done!
   end
 
   CouchNormalizer.Scenario.under_test(StubbedCouchDb)

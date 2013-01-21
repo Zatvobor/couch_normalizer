@@ -32,9 +32,17 @@ document_body(DbName, DocInfoOrId) ->
 update_doc(_DbName, not_found) ->
   not_found;
 
-update_doc(DbName, Body) ->
+update_doc(DbName, Body) when is_tuple(Body) ->
+  case Body of
+    {'Elixir-CouchNormalizer-HashDict', Dict} ->
+      update_doc(DbName, dict:to_list(Dict));
+    _ ->
+      update_doc(DbName, dict:to_list(Body))
+  end;
+
+update_doc(DbName, Body) when is_list(Body) ->
   {ok, Db} = couch_db:open_int(DbName, []),
-  couch_db:update_doc(Db, couch_doc:from_json_obj({Body}),[]).
+  couch_db:update_doc(Db, couch_doc:from_json_obj({Body}), []).
 
 
 increase_current(Normpos) when is_binary(Normpos) ->

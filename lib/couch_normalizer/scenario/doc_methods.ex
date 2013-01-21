@@ -10,7 +10,7 @@ defmodule CouchNormalizer.Scenario.DocMethods do
   defmacro doc(db, id) do
     quote do
       { db, id } = { unquote(db), unquote(id) }
-      HashDict.new(couchdb.document_body(db, id))
+      CouchNormalizer.HashDict.new(couchdb.document_body(db, id))
     end
   end
 
@@ -40,7 +40,7 @@ defmodule CouchNormalizer.Scenario.DocMethods do
     quote do
       { db, id } = { unquote(db), unquote(id) }
       doc        = doc(db, id)
-      couchdb.update_doc mark_as_deleted(doc)
+      couchdb.update_doc(db, mark_as_deleted(doc))
     end
   end
 
@@ -56,7 +56,7 @@ defmodule CouchNormalizer.Scenario.DocMethods do
 
   @doc false
   defmacro mark_as_deleted(body) do
-    quote do: create_field(unquote(body), "_deleted", :true)
+    quote do: create_field(unquote(body), "_deleted", true)
   end
 
 

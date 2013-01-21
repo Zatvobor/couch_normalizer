@@ -6,9 +6,9 @@ defmodule CouchNormalizer.Scenario.DocMethodsTest do
   use CouchNormalizer.Scenario
 
   defmodule StubbedCouchDb do
-    def body, do: HashDict.new [{"field", "value"}, {"field_2", "value"}]
+    def body, do: CouchNormalizer.HashDict.new [{"field", "value"}, {"field_2", "value"}]
     def document_body(_db, _id), do: body
-    def update_doc(_body), do: :done!
+    def update_doc(_db, _body), do: :done!
   end
 
   CouchNormalizer.Scenario.under_test(StubbedCouchDb)

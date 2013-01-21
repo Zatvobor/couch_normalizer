@@ -92,14 +92,12 @@ apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
   case couch_normalizer_utils:next_scenario(S#scope.scenarios_ets, CurrentNormpos) of
     {Normpos, Title, ScenarioFun} ->
       case 'Elixir-CouchNormalizer-Scenario':call(ScenarioFun, {DbName, Id, Rev, Body}) of
-        {update, {_, BodyDict}} ->
+        {update, { _, BodyDict }} ->
             ?LOG_INFO("normalize '~p' document according to '~s' scenario~n", [Id, Title]),
 
             % updates rev_history_ field
             RevHistoryBodyDict = couch_normalizer_utils:replace_rev_history_list(BodyDict, {Title, Normpos}),
-            BodyList = dict:to_list(RevHistoryBodyDict),
-            % updates modified document
-            {ok, _} = couch_db:update_doc(Db, couch_doc:from_json_obj({BodyList}), []),
+            {ok, _} = couch_normalizer_utils:update_doc(DbName, RevHistoryBodyDict),
             % updates execution status
             gen_server:cast(S#scope.processing_status, {increment_value, docs_normalized}),
             couch_db:close(Db),
