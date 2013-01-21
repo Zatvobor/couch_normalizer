@@ -40,32 +40,35 @@ defmodule CouchNormalizer.Scenario.FieldMethodsTest do
   end
 
   test :rename_field do
-    body = @body
+    expected = [{"field_2",:v2}, {"field_3",:v3}, {"new_field",:v}]
+    body     = @body
 
     rename_field(:unknown, :a)
     rename_field(:field, :new_field)
 
-    assert_equal([{"field_2",:v2}, {"new_field",:v}, {"field_3",:v3}], body)
+    assert_equal(expected, body)
   end
 
   test :update_field do
-    body = @body
+    expected = [{"field",:updated}, {"field_2",:v2}, {"field_3",:v3}]
+    body     = @body
 
     update_field(:unknown, :a)
     update_field(:field, :updated)
 
-    assert_equal([{"field_2",:v2}, {"field",:updated}, {"field_3",:v3}], body)
+    assert_equal(expected, body)
   end
 
   test :create_field do
-    body = HashDict.new
+    expected = [{"field","new_value"}, {"field_1",:new_value}, {"field_2",["hello"]}, {"field_3",1}]
+    body     = HashDict.new
 
     create_field :field,   "new_value"
     create_field :field_1, :new_value
     create_field :field_2, ["hello"]
     create_field :field_3, 1
 
-    assert_equal([{"field_2",["hello"]}, {"field_1",:new_value}, {"field","new_value"}, {"field_3",1}], body)
+    assert_equal(expected, body)
   end
 
 

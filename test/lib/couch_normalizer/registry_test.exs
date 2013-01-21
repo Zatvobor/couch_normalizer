@@ -42,22 +42,43 @@ defmodule CouchNormalizer.RegistryTest do
     assert :ets.last(registry)     == 22
   end
 
-  test "tries to load a missing scenario" do
-    assert_raise ArgumentError, fn() ->
+  # test "tries to load all scenarios for an missing path" do
+  #   assert_raise Code.LoadError, fn() ->
+  #     CouchNormalizer.Registry.load_all("/missing_path")
+  #   end
+  # end
+
+  test "tries to load an missing file" do
+    assert_raise Code.LoadError, fn() ->
       CouchNormalizer.Registry.load("test/missing-scenario.exs")
     end
+  end
+
+
+  @subject "examples"
+
+  test "loads all scenarios from '#{@subject}'" do
+    CouchNormalizer.Registry.load_all @subject
+    assert_scenario(1, "1-example-scenario")
   end
 
   @subject "examples/1-example-scenario.exs"
 
   test "loads a '#{@subject}' scenario" do
     CouchNormalizer.Registry.load @subject
+    assert_scenario(1, "1-example-scenario")
+  end
 
-    [{ normpos, title, fun }] = :ets.lookup(CouchNormalizer.Registry.to_ets, 1)
 
-    assert normpos == 1
-    assert title == "1-example-scenario"
-    assert is_function(fun)
+  def assert_scenario(normpos, title) do
+    [scenario]  = :ets.lookup(CouchNormalizer.Registry.to_ets, 1)
+    { n, t, f } = scenario
+
+    assert normpos == n
+    assert title   == t
+    assert is_function(f)
+
+    scenario
   end
 
 end

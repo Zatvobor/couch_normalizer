@@ -40,12 +40,11 @@ defmodule CouchNormalizer.Registry do
 
   @doc false
   def load_all(path) do
-    Enum.each File.wildcard(File.expand_path(to_binary(path)) <> "/*.exs"), fn(f) -> Code.load_file(f) end
+    Enum.each Path.wildcard(path <> "/*.exs"), fn(f) -> Code.load_file(f) end
   end
 
   @doc false
   def load(file) do
-    Code.load_file File.expand_path(to_binary(file))
+    file |> Code.load_file
   end
-
 end

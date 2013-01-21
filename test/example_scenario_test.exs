@@ -25,12 +25,11 @@ defmodule CouchNormalizer.ExampleScenarioTest do
   end
 
 
-  test "does load the #{@subject} scenario" do
-    assert is_function(subject_fun)
-  end
-
   test "tries to call with improper context" do
-    assert CouchNormalizer.Scenario.call(subject_fun, {"db", "ddoc", "rev", [{"type", "track"}]}) == nil
+    document = [{"type", "track"}]
+    action   = CouchNormalizer.Scenario.call(subject_fun, {"db", "ddoc", "rev", document})
+
+    assert  action == nil
   end
 
   test "updates some 'user' document" do
