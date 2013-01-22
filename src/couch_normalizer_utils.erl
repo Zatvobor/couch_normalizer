@@ -29,15 +29,15 @@ document_body(DbName, DocInfoOrId) ->
   end.
 
 
-update_doc(_DbName, not_found) ->
-  not_found;
-
 update_doc(DbName, Body) when is_tuple(Body) ->
   update_doc(DbName, Body:to_list());
 
 update_doc(DbName, Body) when is_list(Body) ->
   {ok, Db} = couch_db:open_int(DbName, []),
-  couch_db:update_doc(Db, couch_doc:from_json_obj({Body}), []).
+  couch_db:update_doc(Db, couch_doc:from_json_obj({Body}), []);
+
+update_doc(_DbName, not_found) ->
+  not_found.
 
 
 increase_current(Normpos) when is_binary(Normpos) ->
