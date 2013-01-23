@@ -10,7 +10,9 @@ defmodule CouchNormalizer.Scenario.DocMethods do
   defmacro doc(db, id) do
     quote do
       { db, id } = { unquote(db), unquote(id) }
-      HashDict.new(couchdb.document_body(db, id))
+      body = couchdb.document_body(db, id)
+      unless body == :not_found, do: body = HashDict.new(body)
+      body
     end
   end
 
