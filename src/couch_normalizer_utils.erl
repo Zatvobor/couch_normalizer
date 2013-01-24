@@ -34,7 +34,11 @@ update_doc(DbName, Body) when is_tuple(Body) ->
 
 update_doc(DbName, Body) when is_list(Body) ->
   {ok, Db} = couch_db:open_int(DbName, []),
-  couch_db:update_doc(Db, couch_doc:from_json_obj({Body}), []);
+  try couch_db:update_doc(Db, couch_doc:from_json_obj({Body}), []) of
+    {ok, _} -> ok
+  catch
+    conflict -> conflict
+  end;
 
 update_doc(_DbName, not_found) ->
   not_found.

@@ -93,17 +93,26 @@ apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
     {Normpos, Title, ScenarioFun} ->
       case 'Elixir-CouchNormalizer-Scenario':call(ScenarioFun, {DbName, Id, Rev, Body}) of
         {update, BodyDict} ->
-            ?LOG_INFO("normalize '~p' document according to '~s' scenario~n", [Id, Title]),
 
             % updates rev_history_ field
             RevHistoryBodyDict = couch_normalizer_utils:replace_rev_history_list(BodyDict, {Title, Normpos}),
-            {ok, _} = couch_normalizer_utils:update_doc(DbName, RevHistoryBodyDict),
-            % updates execution status
-            gen_server:cast(S#scope.processing_status, {increment_value, docs_normalized}),
-            couch_db:close(Db),
 
-            % tries again to apply another scenarios for that document
-            ok = apply_scenario(S, {DbName, Db, Id});
+            % tries to update document.
+            case couch_normalizer_utils:update_doc(DbName, RevHistoryBodyDict) of
+              ok ->
+                ?LOG_INFO("normalize '~p' document according to '~s' scenario~n", [Id, Title]),
+
+                % updates execution status
+                gen_server:cast(S#scope.processing_status, {increment_value, docs_normalized}),
+
+                % tries again to apply another scenarios for that document
+                ok = apply_scenario(S, {DbName, Db, Id});
+              conflict ->
+                ?LOG_INFO("normalize '~p' document failed for '~s' scenario~n", [Id, Title])
+            end,
+
+            couch_db:close(Db),
+            ok;
         _ ->
             % increases the current normpos value and try to find the next scenario
             NextNormpos = couch_normalizer_utils:increase_current(CurrentNormpos),
