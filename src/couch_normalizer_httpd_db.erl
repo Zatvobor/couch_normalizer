@@ -36,4 +36,4 @@ handle_normalize_req(Req, _Db) ->
 
 % Gets a normalization process execution status.
 %   curl -v http://127.0.0.1:5984/_active_tasks
-%   => [{"pid":"<0.174.0>","continue":false,"db":"db","docs_normalized":0,"docs_read":3004,"finished_on":1358513508,"num_workers":5,"started_on":1358513508,"type":"normalization","updated_on":1358513508}]
+%   => [{"pid":"<0.174.0>","continue":false,"db":"db","docs_conflicted":0,"docs_normalized":0,"docs_read":3004,"finished_on":1358513508,"num_workers":5,"started_on":1358513508,"type":"normalization","updated_on":1358513508}]

@@ -29,7 +29,8 @@ init(S) ->
       {num_workers, S#scope.num_workers},
       {continue, true},
       {docs_read, 0},
-      {docs_normalized, 0}
+      {docs_normalized, 0},
+      {docs_conflicted, 0}
   ]),
 
   {ok, stateless}.

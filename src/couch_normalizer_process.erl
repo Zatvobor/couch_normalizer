@@ -100,7 +100,7 @@ apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
             % tries to update document.
             case couch_normalizer_utils:update_doc(DbName, RevHistoryBodyDict) of
               ok ->
-                ?LOG_INFO("normalize '~p' document according to '~s' scenario~n", [Id, Title]),
+                ?LOG_INFO("'~p' normalized according to '~s' scenario~n", [Id, Title]),
 
                 % updates execution status
                 gen_server:cast(S#scope.processing_status, {increment_value, docs_normalized}),
@@ -108,7 +108,8 @@ apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
                 % tries again to apply another scenarios for that document
                 ok = apply_scenario(S, {DbName, Db, Id});
               conflict ->
-                ?LOG_INFO("normalize '~p' document failed for '~s' scenario~n", [Id, Title])
+                ?LOG_INFO("conflict occured for '~p' during processing a '~s' scenario~n", [Id, Title]),
+                gen_server:cast(S#scope.processing_status, {increment_value, docs_conflicted})
             end,
 
             couch_db:close(Db),
