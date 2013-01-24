@@ -4,26 +4,29 @@ setup: get-deps compile test
 
 
 get-couchdb-deps:
-	cd deps && git clone -b 1.2.x git://github.com/apache/couchdb.git
+	@ cd deps && git clone -b 1.2.x git://github.com/apache/couchdb.git
+
+setup-dev-couchdb:
+	@ cd deps/couchdb && ./bootstrap && ./configure && make dev
 
 get-deps:
-	./rebar get-deps
-	cd deps/elixir && make compile
+	@ ./rebar get-deps
+	@ cd deps/elixir && make compile
 
 compile: clean elixir erlang
 
 clean:
-	rm -rf ebin/ && PATH=$(PATH):$(ELIXIR_PATH) mix clean
+	@ rm -rf ebin/ && PATH=$(PATH):$(ELIXIR_PATH) mix clean
 
 erlang:
-	./rebar compile
+	@ ./rebar compile
 
 elixir:
-	PATH=$(PATH):$(ELIXIR_PATH) mix compile
+	@ PATH=$(PATH):$(ELIXIR_PATH) mix compile
 
 
 test: test_elixir
 
 
 test_elixir:
-	PATH=$(PATH):$(ELIXIR_PATH) mix test
+	@ PATH=$(PATH):$(ELIXIR_PATH) mix test
