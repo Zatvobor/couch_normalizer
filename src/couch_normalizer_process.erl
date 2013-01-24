@@ -83,41 +83,44 @@ apply_scenario(S, {DbName, _, FullDocInfo} = DocInfo) ->
   DocObject = couch_normalizer_utils:document_object(DbName, FullDocInfo),
   ok = apply_scenario(S, DocInfo, DocObject).
 
-
 apply_scenario(_S, _DocInfo, not_found) ->
   ok;
 
 apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
-  % finds the next scenario according to the last normpos_ position (or start apply scenarios from the beginning)
+  % finds the next scenario according to the last normpos_ position
+  % or try to start from the beginning
   case couch_normalizer_utils:next_scenario(S#scope.scenarios_ets, CurrentNormpos) of
     {Normpos, Title, ScenarioFun} ->
       case 'Elixir-CouchNormalizer-Scenario':call(ScenarioFun, {DbName, Id, Rev, Body}) of
         {update, BodyDict} ->
-
-            % updates rev_history_ field
-            RevHistoryBodyDict = couch_normalizer_utils:replace_rev_history_list(BodyDict, {Title, Normpos}),
-
-            % tries to update document.
-            case couch_normalizer_utils:update_doc(DbName, RevHistoryBodyDict) of
-              ok ->
-                ?LOG_INFO("'~p' normalized according to '~s' scenario~n", [Id, Title]),
-
-                % updates execution status
-                gen_server:cast(S#scope.processing_status, {increment_value, docs_normalized}),
-
-                % tries again to apply another scenarios for that document
-                ok = apply_scenario(S, {DbName, Db, Id});
-              conflict ->
-                ?LOG_INFO("conflict occured for '~p' during processing a '~s' scenario~n", [Id, Title]),
-                gen_server:cast(S#scope.processing_status, {increment_value, docs_conflicted})
-            end,
-
-            couch_db:close(Db),
-            ok;
+          % saves changes for certain document and resolve a conflict
+          apply_changes(S, {DbName, Db}, {BodyDict, Id}, {Normpos, Title});
         _ ->
             % increases the current normpos value and try to find the next scenario
             NextNormpos = couch_normalizer_utils:increase_current(CurrentNormpos),
             ok = apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, NextNormpos})
       end;
+    % no more available scenarios
+    % so, goes to the next document
     nil -> ok
   end.
+
+
+apply_changes(S, {DbName, Db}, {BodyDict, Id}, {Normpos, Title}) ->
+  % updates rev_history_ field
+  RevHistoryBodyDict = couch_normalizer_utils:replace_rev_history_list(BodyDict, {Title, Normpos}),
+  % tries to update document.
+  case couch_normalizer_utils:update_doc(DbName, RevHistoryBodyDict) of
+    ok ->
+      ?LOG_INFO("'~p' normalized according to '~s' scenario~n", [Id, Title]),
+      % updates execution status
+      gen_server:cast(S#scope.processing_status, {increment_value, docs_normalized}),
+      % tries again to apply another scenarios for that document
+      ok = apply_scenario(S, {DbName, Db, Id});
+    conflict ->
+      ?LOG_INFO("conflict occured for '~p' during processing a '~s' scenario~n", [Id, Title]),
+      gen_server:cast(S#scope.processing_status, {increment_value, docs_conflicted})
+  end,
+
+  couch_db:close(Db),
+  ok.
