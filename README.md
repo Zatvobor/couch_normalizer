@@ -92,8 +92,9 @@ Installation Quickstart
 
 After downloading, type:
 
-    make setup # get-deps compile test
-    make get-couchdb-deps # Optional: clone couch db 1.2.x git from apache repos if you want to use a Couch DB as dependency.
+    make setup              # get-deps compile test
+    make get-couchdb-deps   # Optional: clone couch db 1.2.x git from apache repos if you want to use a Couch DB as dependency
+    make setup-dev-couchdb  # Optional: install Couch DB development version, and you'll have a `deps/couchdb/utils/./run -i`
 
 After passed tests, you will be ready for final configuration step:
 
