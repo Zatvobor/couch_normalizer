@@ -94,11 +94,11 @@ apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
       case 'Elixir-CouchNormalizer-Scenario':call(ScenarioFun, {DbName, Id, Rev, Body}) of
         {update, BodyDict} ->
           % saves changes for certain document and resolve a conflict
-          apply_changes(S, {DbName, Db}, {BodyDict, Id}, {Normpos, Title});
+          ok = apply_changes(S, {DbName, Db}, {BodyDict, Id}, {Normpos, Title});
         _ ->
-            % increases the current normpos value and try to find the next scenario
-            NextNormpos = couch_normalizer_utils:increase_current(CurrentNormpos),
-            ok = apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, NextNormpos})
+          % increases the current normpos value and try to find the next scenario
+          NextNormpos = couch_normalizer_utils:increase_current(CurrentNormpos),
+          ok = apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, NextNormpos})
       end;
     % no more available scenarios
     % so, goes to the next document
