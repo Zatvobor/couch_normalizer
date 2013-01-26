@@ -7,15 +7,13 @@ defmodule CouchNormalizer.Scenario.FieldMethods do
   end
 
   @doc false
-  defmacro field(:not_found, _name) do
-    quote do: nil
-  end
-
-  @doc false
   defmacro field(body, name) do
     quote do
       { body, name } = { unquote(body), unquote(name) }
-      HashDict.get(body, to_binary(name), :nil)
+      case body do
+        :not_found -> nil
+        _ -> body[to_binary(name)]
+      end
     end
   end
 
