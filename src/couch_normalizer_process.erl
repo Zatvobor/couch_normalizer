@@ -109,17 +109,15 @@ apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
 apply_changes(S, {DbName, Db}, {BodyDict, Id}, {Normpos, Title}) ->
   % puts in updates to a 'rev_history_' field
   RevHistoryBodyDict = couch_normalizer_utils:replace_rev_history_list(BodyDict, {Title, Normpos}),
-  % tries to update document.
   case couch_normalizer_utils:update_doc(Db, RevHistoryBodyDict) of
     ok ->
       ?LOG_INFO("'~p' normalized according to '~s' scenario~n", [Id, Title]),
-      % updates execution status
       gen_server:cast(S#scope.processing_status, {increment_value, docs_normalized}),
       % tries again to apply another scenarios for that document
       ok = apply_scenario(S, {DbName, Db, Id});
     conflict ->
       ?LOG_INFO("conflict occured for '~p' during processing a '~s' scenario~n", [Id, Title]),
       gen_server:cast(S#scope.processing_status, {increment_value, docs_conflicted}),
-      % it's ok, so goes to the next document
+      % it's ok, does nothing. So, go to the next document
       ok
   end.
