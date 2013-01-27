@@ -75,6 +75,13 @@ Each normalized document has a special `rev_history_` field which contains recen
 Actually, `normpos` is a anchor and means that some document meets some scenario. So, for further normalization only 'user' documents without `"normpos" => 1` will be processed and updated.
 
 
+Check more advanced examples:
+
+* [examples/2-acquire-missing-artists-fields.exs](https://github.com/datahogs/couch_normalizer/blob/master/examples/2-acquire-missing-artists-fields.exs)
+
+* [examples/3-add-artist-uri-to-track-if-album-has-it](https://github.com/datahogs/couch_normalizer/blob/master/examples/3-add-artist-uri-to-track-if-album-has-it.exs)
+
+
 Scenario DSL API
 ----------------
 
@@ -121,4 +128,4 @@ License
 -------
 
 `Couch Normalizer` source code is released under Apache 2 License.
-Check LICENSE and NOTICE files for more information.
+Check [LICENSE](https://github.com/datahogs/couch_normalizer/blob/master/LICENSE) and [NOTICE](https://github.com/datahogs/couch_normalizer/blob/master/NOTICE) files for more details.
