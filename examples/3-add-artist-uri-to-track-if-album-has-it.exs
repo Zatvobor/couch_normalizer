@@ -1,5 +1,5 @@
 use CouchNormalizer.Scenario
-# Some tracks have missing `artist_uri` field, Hovewer, we could acquire missing field from `album`
+# Some tracks have missing `artist_uri` field. Hovewer, we could acquire missing field from `album`
 # that belongs to track.
 CouchNormalizer.Registry.acquire "3-add-artist-uri-to-track-if-album-has-it", fn(db, _doc_id, _rev, body) ->
   if body["type"] == "track" do

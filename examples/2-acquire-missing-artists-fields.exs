@@ -1,12 +1,13 @@
 use CouchNormalizer.Scenario
 # Sets/Updates missing `artist_uri` and `artist` fields for `album` and `track` documents
-# via special 'queque' documents.
+# through special 'queued' approach.
 CouchNormalizer.Registry.acquire "2-acquire-missing-artists-fields", fn(_db, doc_id, _rev, body) ->
   if  (body["type"] == "album" || body["type"] == "track") do
     # contains 'ids' and 'fields' which will be updated
+    # we should use it as a `:cached!` because this is a fat one.
     name_and_id_doc = doc("changes-queue", "tracks_albums_artist_name_and_id", :cached!)
 
-    # checks if `name_and_id_doc` has updates for the current `doc_id`
+    # checks if `name_and_id_doc` has records for current `doc_id`
     name_and_id_field = name_and_id_doc[doc_id]
     if name_and_id_field != nil do
       [artist_name, artist_id] = name_and_id_field

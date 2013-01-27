@@ -79,7 +79,7 @@ Check more advanced examples:
 
 * [examples/2-acquire-missing-artists-fields.exs](https://github.com/datahogs/couch_normalizer/blob/master/examples/2-acquire-missing-artists-fields.exs)
 
-* [examples/3-add-artist-uri-to-track-if-album-has-it](https://github.com/datahogs/couch_normalizer/blob/master/examples/3-add-artist-uri-to-track-if-album-has-it.exs)
+* [examples/3-add-artist-uri-to-track-if-album-has-it.exs](https://github.com/datahogs/couch_normalizer/blob/master/examples/3-add-artist-uri-to-track-if-album-has-it.exs)
 
 
 Scenario DSL API
