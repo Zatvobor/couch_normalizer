@@ -1,5 +1,8 @@
 defmodule CouchNormalizer.Scenario.DocMethods do
-
+  @moduledoc """
+  This module provides convenience functions for fething/removing documents from
+  current or second dbs.
+  """
 
   @doc false
   defmacro doc(id) do
@@ -52,19 +55,18 @@ defmodule CouchNormalizer.Scenario.DocMethods do
   end
 
   @doc false
-  defmacro mark_as_deleted(:not_found) do
-    quote do: :not_found
-  end
-
-  @doc false
   defmacro mark_as_deleted(body) do
-    quote do: create_field(unquote(body), "_deleted", true)
+    quote do
+      { body } = { unquote(body) }
+      case body do
+        :not_found -> :not_found
+        _          -> create_field(body, "_deleted", true)
+      end
+    end
   end
 
 
-  # Internal fuctions.
-  # You shouldn't call them directly from scenario.
-
+  # [INTERNAL] You shouldn't call them directly from your scenario.
 
   @doc false
   def couchdb() do
@@ -74,5 +76,4 @@ defmodule CouchNormalizer.Scenario.DocMethods do
       :couch_normalizer_utils
     end
   end
-
 end

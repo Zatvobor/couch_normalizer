@@ -1,10 +1,8 @@
 defmodule CouchNormalizer.Scenario.CachedMethods do
-
-
-  @doc false
-  # defmacro doc(id, :cached!) do
-    # quote do: doc(var!(db), unquote(id), :cached!)
-  # end
+  @moduledoc """
+  This module provides convenience functions around caching which based on
+  current process dictionary. Check a `erlang:put/2` function for documentation.
+  """
 
   @doc false
   defmacro doc(db, id, :cached!) do
@@ -15,14 +13,6 @@ defmodule CouchNormalizer.Scenario.CachedMethods do
   end
 
   @doc false
-  # defmacro doc_field(id, name, :cached!) do
-    # quote do
-      # { id, name } = { unquote(id), unquote(name) }
-      # doc_field(var!(db), id, name, :cached!)
-    # end
-  # end
-
-  @doc false
   defmacro doc_field(db, id, name, :cached!) do
     quote do
       { db, id, name } = { unquote(db), unquote(id), unquote(name) }
@@ -31,8 +21,7 @@ defmodule CouchNormalizer.Scenario.CachedMethods do
   end
 
 
-  # Internal functions.
-  # You shouldn't call them directly from scenario.
+  # [INTERNAL] You shouldn't call them directly from your scenario script.
 
    @doc false
   def caches(key, fun) when is_function(fun) do
@@ -47,5 +36,4 @@ defmodule CouchNormalizer.Scenario.CachedMethods do
 
   @doc false
   def cached(key), do: Process.get(key)
-
 end

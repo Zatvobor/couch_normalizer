@@ -1,5 +1,4 @@
 defmodule CouchNormalizer.Scenario do
-
   @moduledoc """
   This module specifies the Normalization DSL and brings
   manipulation functions to your scenario.

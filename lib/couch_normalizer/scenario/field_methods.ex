@@ -1,5 +1,8 @@
 defmodule CouchNormalizer.Scenario.FieldMethods do
-
+  @moduledoc """
+  This module provides convenience for getting/creating/removing/updating fields
+  from current or second dbs.
+  """
 
   @doc false
   defmacro field(name) do
@@ -12,16 +15,14 @@ defmodule CouchNormalizer.Scenario.FieldMethods do
       { body, name } = { unquote(body), unquote(name) }
       case body do
         :not_found -> nil
-        _ -> body[to_binary(name)]
+        _          -> body[to_binary(name)]
       end
     end
   end
 
   @doc false
   defmacro remove_field(name) do
-    quote do
-      var!(body) = remove_field(var!(body), unquote(name))
-    end
+    quote do: var!(body) = remove_field(var!(body), unquote(name))
   end
 
   @doc false
