@@ -1,17 +1,17 @@
 Couch Normalizer: A convenience for massive document migration
 ---------------------------------------------------------------
 
-at Datahogs we're using `Couch Normalizer` (it's a result of our challenges) as a part of our data driven engineering to one of music startup.
+at Datahogs we've been using a `Couch Normalizer` (it's a result of our challenges) as a part of our data driven engineering to one of music startup.
 
-`Couch Normalizer` designed as a standard Couch DB httpd handler (it means that you have a RESTfull interface for interoperability) and uses Rails db migration approach. Written both in Erlang and Elixir. Works well on production and has a great IO performance.
+A `Couch Normalizer` designed as a standard Apache CouchDB httpd handler (it means that you got a RESTfull interface for interoperability) and uses Rails db migration approach. Written both in Erlang and [Elixir](https://github.com/elixir-lang/elixir). Works well on production and has a great IO performance.
 
-As a result, it allows a developer to deploy migration scripts (aka scenarios) and change big amount of documents as fast as possible without HTTP overhead and certain 'delayed jobs'.
+As a result, it allows a developer to deploy migration scripts (aka scenarios) and change big amount of documents as fast as possible (without HTTP overhead and some kind of 'delayed jobs') via internal CouchDB functions, such as `couch_db:open_doc/2`, `couch_db:update_doc/3` and so on.
 
 
 Indicative performance (non trivial case)
 ----------------------------------------
 
-    # average document size: 67.19Kb
+    # CouchDB: 21_634_631 documents, 67.19Kb (average document size)
     # runtime: 43 minutes and 41 seconds (2621)
     [{ "docs_normalized":347144, "docs_read":21634631, "started_on":1357306518, "finished_on":1357309139, "num_workers":20 }]
 
@@ -22,7 +22,7 @@ Indicative performance (non trivial case)
 [Scenario example](https://github.com/datahogs/couch_normalizer/blob/master/examples/1-example-scenario.exs)
 ----------------------------------------------------------------------------------------------------------------
 
-Imagine, you manage a big DB with multiple document type ('user', 'track', 'album', 'artist' and so on) and you have to improve/change structure for all 'user' documents once or just only for couple of recent documents.
+Imagine, you manage a big DB which contains 'user', 'track', 'album', 'artist' documents and you have to improve/change structure for all 'user' documents once or just only for couple of recent (daily) documents as quick as possible, without network issues/latency, fallbacks and execution monitoring...
 
 Let's consider an example:
 
@@ -66,13 +66,22 @@ Let's consider an example:
         end
       end
 
-In short, `CouchNormalizer.Registry.acquire/2` accepts scenario `title` and `callback` function which will be applied for each document inside your DB. Whether `callback` returns `{:update, body}` where `body` is a updated document, then `Couch Normalizer` will update this document immediately.
+All you need to do, just to submit a POST request:
+
+    curl -v -XPOST -H"Content-Type: application/json" http://127.0.0.1:5984/db/_normalize
+    => {"ok":"Normalization process has been started (<0.174.0>)."}
+
+As a result, a `Couch Normalizer` starts internal iterator for `db` database and tries to apply each document to `1-example-scenario` scenario.
+
+In short, `CouchNormalizer.Registry.acquire/2` accepts scenario `title` and `callback` function which will be applied for each document inside your CouchDB. Whether `callback` returns `{:update, body}`, then `Couch Normalizer` will update this document immediately.
 
 Each normalized document has a special `rev_history_` field which contains recent normalization info:
 
       "rev_history_" => {"title" => "1-example-scenario", "normpos" => 1}
 
 Actually, `normpos` is a anchor and means that some document meets some scenario. So, for further normalization only 'user' documents without `"normpos" => 1` will be processed and updated.
+
+All further migrations should be called as `2-...`, `3-...`. In case when `Couch Normalizer` processes a document which hasn't yet a `normpos`, then processing engine will try to apply a document form the `1-...` to `X-...`.
 
 
 Check more advanced examples:
@@ -100,18 +109,18 @@ Installation Quickstart
 After downloading, type:
 
     make setup              # get-deps compile test
-    make get-couchdb-deps   # Optional: clone couch db 1.2.x git from apache repos if you want to use a Couch DB as dependency
-    make setup-dev-couchdb  # Optional: install Couch DB development version, and you'll have a `deps/couchdb/utils/./run -i`
+    make get-couchdb-deps   # Optional: clone couch db 1.2.x git from apache repos if you want to use a CouchDB as dependency
+    make setup-dev-couchdb  # Optional: install CouchDB development version, and you'll have a `deps/couchdb/utils/./run -i`
 
 After passed tests, you will be ready for final configuration step:
 
-put in `elixir` and `couch_normalizer` to `couchdb` bash
+put in `elixir` and `couch_normalizer` ebins to `couchdb` bash script
 
     ELIXIR_PA_OPTIONS="-pa /var/www/couch_normalizer/current/deps/elixir/lib/elixir/ebin"
     COUCH_NORMALIZER_PA_OPTIONS="-pa /var/www/couch_normalizer/current/ebin"
     ERL_START_OPTIONS="$ERL_OS_MON_OPTIONS -sasl errlog_type error +K true +A 4 $ELIXIR_PA_OPTIONS $COUCH_NORMALIZER_PA_OPTIONS"
 
-configure Couch DB `local.ini` config
+configure CouchDB `local.ini` config
 
     [httpd_db_handlers]
     _normalize = {couch_normalizer_httpd_db, handle_normalize_req}
