@@ -89,7 +89,7 @@ apply_scenario(_S, _DocInfo, not_found) ->
 apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
   % finds the next scenario according to the last normpos_ position
   % or try to start from the beginning
-  case couch_normalizer_utils:next_scenario(S#scope.scenarios_ets, CurrentNormpos) of
+  case next_scenario(S#scope.scenarios_ets, CurrentNormpos) of
     {Normpos, Title, ScenarioFun} ->
       case 'Elixir-CouchNormalizer-Scenario':call(ScenarioFun, {DbName, Id, Rev, Body}) of
         {update, BodyDict} ->
@@ -97,7 +97,7 @@ apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
           ok = apply_changes(S, {DbName, Db}, {BodyDict, Id}, {Normpos, Title});
         _ ->
           % increases the current normpos value and try to find the next scenario
-          NextNormpos = couch_normalizer_utils:increase_current(CurrentNormpos),
+          NextNormpos = increase_current(CurrentNormpos),
           ok = apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, NextNormpos})
       end;
     % no more available scenarios
@@ -108,7 +108,7 @@ apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
 
 apply_changes(S, {DbName, Db}, {BodyDict, Id}, {Normpos, Title}) ->
   % puts in updates to a 'rev_history_' field
-  RevHistoryBodyDict = couch_normalizer_utils:replace_rev_history_list(BodyDict, {Title, Normpos}),
+  RevHistoryBodyDict = replace_rev_history_list(BodyDict, {Title, Normpos}),
   case couch_normalizer_db:update_doc(Db, RevHistoryBodyDict) of
     ok ->
       ?LOG_INFO("'~p' normalized according to '~s' scenario~n", [Id, Title]),
@@ -121,3 +121,35 @@ apply_changes(S, {DbName, Db}, {BodyDict, Id}, {Normpos, Title}) ->
       % it's ok, does nothing. So, go to the next document
       ok
   end.
+
+
+% internal helpers for processing flow
+
+next_scenario(Ets, Normpos) when is_list(Normpos) ->
+  next_scenario(Ets, list_to_integer(Normpos));
+
+next_scenario(Ets, Normpos) when is_binary(Normpos) ->
+  next_scenario(Ets, binary_to_list(Normpos));
+
+next_scenario(Ets, Normpos) when is_integer(Normpos) ->
+  case ets:next(Ets, Normpos) of
+    '$end_of_table' ->
+      nil;
+    Key -> [H|_] =
+      ets:lookup(Ets, Key), H
+  end.
+
+
+increase_current(Normpos) when is_binary(Normpos) ->
+  increase_current(list_to_integer(binary_to_list(Normpos)));
+
+increase_current(Normpos) when is_integer(Normpos) ->
+  Normpos + 1.
+
+
+replace_rev_history_list(Body, RevHistory) ->
+  'Elixir-HashDict':put(Body,<<"rev_history_">>, rev_history_list(RevHistory)).
+
+
+rev_history_list({Title, Normpos} = _RevHistory) ->
+  {[{<<"title">>, Title},{<<"normpos">>, Normpos}]}.
