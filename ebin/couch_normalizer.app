@@ -1,6 +1,6 @@
 {application,couch_normalizer,
-             [{description,"A massive documents migration/normalization/changes appliance. Designed as custom Couch DB httpd handler"},
-              {vsn,"0.5.0.dev"},
+             [{description,"Data migration appliance that works inside Couch DB node"},
+              {vsn,"0.5.0"},
               {modules,['Elixir-CouchNormalizer-Registry',
                         'Elixir-CouchNormalizer-Scenario',
                         'Elixir-CouchNormalizer-Scenario-CachedMethods',
