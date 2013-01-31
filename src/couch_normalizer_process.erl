@@ -73,9 +73,12 @@ spawn_worker(Scope) ->
 worker_loop(S) ->
   case couch_work_queue:dequeue(S#scope.processing_queue, 1) of
     {ok, [DocInfo]} ->
+
       apply_scenario(S, DocInfo),
       worker_loop(S);
-    closed -> stoped
+
+    closed ->
+      stoped
   end.
 
 
@@ -135,8 +138,9 @@ next_scenario(Ets, Normpos) when is_integer(Normpos) ->
   case ets:next(Ets, Normpos) of
     '$end_of_table' ->
       nil;
-    Key -> [H|_] =
-      ets:lookup(Ets, Key), H
+    Key ->
+      [H|_] = ets:lookup(Ets, Key),
+      H
   end.
 
 

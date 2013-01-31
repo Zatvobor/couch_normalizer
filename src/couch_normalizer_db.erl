@@ -6,25 +6,26 @@
 -export([document_object/2, document_body/2, update_doc/2]).
 
 
-document_object(DbName, DocInfoOrId) ->
+document_object(DbName, DocInfoOrId) when is_binary(DbName) ->
   {ok, Db} = couch_db:open_int(DbName, []),
+  Doc = document_object(Db, DocInfoOrId),
+  couch_db:close(Db),
 
-  State = case couch_db:open_doc(Db, DocInfoOrId) of
+  Doc;
+
+document_object(Db, DocInfoOrId) when is_record(Db, db) ->
+  case couch_db:open_doc(Db, DocInfoOrId) of
     {ok, Doc} ->
-      {Body}       = couch_doc:to_json_obj(Doc, []),
-      {RevHistory} = couch_util:get_value(<<"rev_history_">>, Body, {[{<<"normpos">>, 0}]}),
-
-      Id      = couch_util:get_value(<<"_id">>, Body),
-      Rev     = couch_util:get_value(<<"_rev">>, Body),
-      Normpos = couch_util:get_value(<<"normpos">>, RevHistory, 0),
+      {Body}        = couch_doc:to_json_obj(Doc, []),
+      Id            = couch_util:get_value(<<"_id">>, Body),
+      Rev           = couch_util:get_value(<<"_rev">>, Body),
+      {RevHistory}  = couch_util:get_value(<<"rev_history_">>, Body, {[{<<"normpos">>, 0}]}),
+      Normpos       = couch_util:get_value(<<"normpos">>, RevHistory, 0),
 
       {Body, Id, Rev, Normpos};
     _ ->
       not_found
-  end,
-
-  couch_db:close(Db),
-  State.
+  end.
 
 
 document_body(DbName, DocInfoOrId) ->
