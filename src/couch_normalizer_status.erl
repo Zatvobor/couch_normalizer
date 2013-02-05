@@ -7,15 +7,7 @@
 -include("couch_db.hrl").
 -include("couch_normalizer.hrl").
 
--export([increment_docs_read/1, update_continue_false/1]).
 -export([start_link/1, init/1, terminate/2, handle_cast/2, handle_call/3, handle_info/2, code_change/3]).
-
-
-increment_docs_read(S) ->
-  gen_server:cast(S, {increment_value, docs_read}).
-
-update_continue_false(S) ->
-  gen_server:cast(S, {update_status, [{continue, false}, {finished_on, oauth_unix:timestamp()}]}).
 
 
 start_link(Scope) ->

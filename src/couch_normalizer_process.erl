@@ -44,7 +44,7 @@ init(S) ->
 
     QueueFun = fun(FullDocInfo, _, Acc) ->
       couch_work_queue:queue(S#scope.processing_queue, {DbName, Db, FullDocInfo}),
-      couch_normalizer_status:increment_docs_read(S#scope.processing_status),
+      gen_server:cast(S#scope.processing_status, {increment_value, docs_read}),
 
       {ok, Acc}
     end,
@@ -54,7 +54,7 @@ init(S) ->
     couch_db:close(Db),
     couch_work_queue:close(S#scope.processing_queue),
 
-    couch_normalizer_status:update_continue_false(S#scope.processing_status)
+    gen_server:cast(S#scope.processing_status, {update_status, [{continue, false}, {finished_on, oauth_unix:timestamp()}]})
   end),
 
   ChildSpec = [{worker, {?MODULE, spawn_worker, [S]}, transient, 1000, worker, dynamic}],
