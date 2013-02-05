@@ -3,15 +3,11 @@
 %  Utilities for reading/updating documents using a CouchDB functions
 %
 -include("couch_db.hrl").
--export([document_object/2, document_body/2, update_doc/2]).
+-export([document_object/2, document_body/2, update_doc/2, touch_db/2]).
 
 
 document_object(DbName, DocInfoOrId) when is_binary(DbName) ->
-  {ok, Db} = couch_db:open_int(DbName, []),
-  Doc = document_object(Db, DocInfoOrId),
-  couch_db:close(Db),
-
-  Doc;
+  touch_db(DbName, fun(Db) -> document_object(Db, DocInfoOrId) end);
 
 document_object(Db, DocInfoOrId) when is_record(Db, db) ->
   case couch_db:open_doc(Db, DocInfoOrId) of
@@ -42,10 +38,7 @@ update_doc(DbName, Body) when is_binary(DbName) and is_tuple(Body) ->
   update_doc(DbName, Body:to_list());
 
 update_doc(DbName, Body) when is_binary(DbName) and is_list(Body) ->
-  {ok, Db} = couch_db:open_int(DbName, []),
-  Status = update_doc(Db, Body),
-  couch_db:close(Db),
-  Status;
+  touch_db(DbName, fun(Db) -> update_doc(Db, Body) end);
 
 update_doc(Db, Body) when is_record(Db, db) and is_tuple(Body) ->
   update_doc(Db, Body:to_list());
@@ -56,3 +49,10 @@ update_doc(Db, Body) when is_record(Db, db) and is_list(Body) ->
   catch
     conflict -> conflict
   end.
+
+
+touch_db(DbName, Fun) ->
+  {ok, Db} = couch_db:open_int(DbName, []),
+  R = Fun(Db),
+  couch_db:close(Db),
+  R.

@@ -40,18 +40,18 @@ init(S) ->
   % spawns document reader process
   spawn_link(fun() ->
     DbName = atom_to_binary(S#scope.label, utf8),
-    {ok, Db} = couch_db:open_int(DbName, []),
+    QueueDocumentsFun = fun(Db) ->
+      QueueFun = fun(FullDocInfo, _, Acc) ->
+        couch_work_queue:queue(S#scope.processing_queue, {DbName, Db, FullDocInfo}),
+        gen_server:cast(S#scope.processing_status, {increment_value, docs_read}),
 
-    QueueFun = fun(FullDocInfo, _, Acc) ->
-      couch_work_queue:queue(S#scope.processing_queue, {DbName, Db, FullDocInfo}),
-      gen_server:cast(S#scope.processing_status, {increment_value, docs_read}),
-
-      {ok, Acc}
+        {ok, Acc}
+      end,
+      couch_db:enum_docs(Db, QueueFun, [], [])
     end,
 
-    couch_db:enum_docs(Db, QueueFun, [], []),
+    couch_normalizer_db:touch_db(DbName, QueueDocumentsFun),
 
-    couch_db:close(Db),
     couch_work_queue:close(S#scope.processing_queue),
 
     gen_server:cast(S#scope.processing_status, {update_status, [{continue, false}, {finished_on, oauth_unix:timestamp()}]})
