@@ -3,8 +3,7 @@
 
 
 run(Scenario) ->
-  spawn(fun() -> in_case(Scenario) end),
-  started.
+  spawn(fun() -> in_case(Scenario) end).
 
 
 in_case(single_process) ->
@@ -15,7 +14,7 @@ in_case(single_process) ->
     couch_normalizer_db:update_doc(<<"seed_labeled_prod">>, Doc)
   end,
 
-  lists:foreach(Try, Seq);
+  measure(lists, foreach, [Try, Seq]);
 
 in_case(spawned_processes) ->
   Seq = lists:seq(1, 5000),
@@ -27,7 +26,7 @@ in_case(spawned_processes) ->
     end)
   end,
 
-  lists:foreach(Try, Seq);
+  measure(lists, foreach, [Try, Seq]);
 
 in_case(spawned_update_processes) ->
   Seq = lists:seq(1, 30000),
@@ -39,7 +38,12 @@ in_case(spawned_update_processes) ->
     end)
   end,
 
-  lists:foreach(Try, Seq);
+  measure(lists, foreach, [Try, Seq]);
 
 in_case(fin) ->
   fin.
+
+
+measure(Module, Function, Arguments) ->
+  {Time, _} = timer:tc(Module, Function, Arguments),
+  io:fwrite("elapsed real time is: ~p m\n", [(Time / 1000) / 60]).
