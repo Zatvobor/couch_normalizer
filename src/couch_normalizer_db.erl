@@ -3,40 +3,8 @@
 %  Utilities for reading/updating documents using a CouchDB functions
 %
 -include("couch_db.hrl").
--export([cast/2, call/2, document_object/2, document_body/2, update_doc/2, touch_db/2]).
+-export([document_object/2, document_body/2, update_doc/2, touch_db/2]).
 
-
-
-% Conveniences for spawned (a)synchronous operations
-
-cast(update_doc = Fun, Args) ->
-  spawn(?MODULE, Fun, Args).
-
-
-call(document_object = Fun, Args) ->
-  do_call(Fun, Args);
-
-call(document_body = Fun, Args) ->
-  do_call(Fun, Args);
-
-call(update_doc = Fun, Args) ->
-  do_call(Fun, Args).
-
-do_call(Fun, Args) ->
-  Process = fun() ->
-    receive
-      {From} -> From ! {reply, apply(?MODULE, Fun, Args)}
-    end
-  end,
-
-  Pid = spawn(Process),
-  Pid ! {self()},
-  receive
-    {reply, Return} -> Return
-  end.
-
-
-% Conveniences for operations with documents
 
 document_object(DbName, DocInfoOrId) when is_binary(DbName) ->
   touch_db(DbName, fun(Db) -> document_object(Db, DocInfoOrId) end);
