@@ -32,7 +32,7 @@ init(#scope{scenarios_ets=undefined} = S) ->
 
 init(#scope{processing_queue=undefined} = S) ->
   % setups processing queue options
-  {ok, ProcessingQueue} = couch_work_queue:new([{multi_workers, true}]),
+  {ok, ProcessingQueue} = couch_work_queue:new([{multi_workers, true}, {max_items, 10000}]),
 
   init(S#scope{processing_queue = ProcessingQueue});
 
@@ -41,8 +41,8 @@ init(S) ->
   spawn_link(fun() ->
     DbName = atom_to_binary(S#scope.label, utf8),
     QueueDocumentsFun = fun(Db) ->
-      QueueFun = fun(FullDocInfo, _, Acc) ->
-        couch_work_queue:queue(S#scope.processing_queue, {DbName, Db, FullDocInfo}),
+      QueueFun = fun(#full_doc_info{id = Id}, _, Acc) ->
+        couch_work_queue:queue(S#scope.processing_queue, {DbName, Db, Id}),
         gen_server:cast(S#scope.processing_status, {increment_value, docs_read}),
 
         {ok, Acc}
@@ -82,9 +82,9 @@ worker_loop(S) ->
   end.
 
 
-apply_scenario(S, {DbName, _, FullDocInfo} = DocInfo) ->
-  DocObject = couch_normalizer_db:document_object(DbName, FullDocInfo),
-  ok = apply_scenario(S, DocInfo, DocObject).
+apply_scenario(S, {DbName, _, Id} = DocInfo) ->
+  DocObject = couch_normalizer_db:document_object(DbName, Id),
+  apply_scenario(S, DocInfo, DocObject).
 
 apply_scenario(_S, _DocInfo, not_found) ->
   ok;
@@ -97,11 +97,11 @@ apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
       case 'Elixir-CouchNormalizer-Scenario':call(ScenarioFun, {DbName, Id, Rev, Body}) of
         {update, BodyDict} ->
           % saves changes for certain document and resolve a conflict
-          ok = apply_changes(S, {DbName, Db}, {BodyDict, Id}, {Normpos, Title});
+          apply_changes(S, {DbName, Db}, {BodyDict, Id}, {Normpos, Title});
         _ ->
           % increases the current normpos value and try to find the next scenario
           NextNormpos = increase_current(CurrentNormpos),
-          ok = apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, NextNormpos})
+          apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, NextNormpos})
       end;
     % no more available scenarios
     % so, goes to the next document
@@ -117,7 +117,7 @@ apply_changes(S, {DbName, Db}, {BodyDict, Id}, {Normpos, Title}) ->
       ?LOG_INFO("'~p' normalized according to '~s' scenario~n", [Id, Title]),
       gen_server:cast(S#scope.processing_status, {increment_value, docs_normalized}),
       % tries again to apply another scenarios for that document
-      ok = apply_scenario(S, {DbName, Db, Id});
+      apply_scenario(S, {DbName, Db, Id});
     conflict ->
       ?LOG_INFO("conflict occured for '~p' during processing a '~s' scenario~n", [Id, Title]),
       gen_server:cast(S#scope.processing_status, {increment_value, docs_conflicted}),
