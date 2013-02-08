@@ -67,19 +67,23 @@ terminate(S) ->
 
 
 spawn_worker(Scope) ->
-  {ok, spawn_link(fun() -> worker_loop(Scope) end)}.
+  {ok, spawn_link(fun() -> dequeue_processing_queue(Scope) end)}.
 
 
-worker_loop(S) ->
-  case couch_work_queue:dequeue(S#scope.processing_queue, 1) of
-    {ok, [DocInfo]} ->
+dequeue_processing_queue(S) ->
+  spawn(fun() ->
+    case couch_work_queue:dequeue(S#scope.processing_queue, 1) of
+      {ok, [DocInfo]} ->
 
-      apply_scenario(S, DocInfo),
-      worker_loop(S);
+        apply_scenario(S, DocInfo),
+        % purposely spawns a new process for processing next document.
+        % normalization does in context of short-lived processes.
+        dequeue_processing_queue(S);
 
-    closed ->
-      stoped
-  end.
+      closed ->
+        stoped
+    end
+  end).
 
 
 apply_scenario(S, {DbName, _, Id} = DocInfo) ->
@@ -97,7 +101,7 @@ apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
       case 'Elixir-CouchNormalizer-Scenario':call(ScenarioFun, {DbName, Id, Rev, Body}) of
         {update, BodyDict} ->
           % saves changes for certain document and resolve a conflict
-          apply_changes(S, {DbName, Db}, {BodyDict, Id}, {Normpos, Title});
+          apply_changes(S, {DbName, Db, Id, BodyDict}, {Normpos, Title});
         _ ->
           % increases the current normpos value and try to find the next scenario
           NextNormpos = increase_current(CurrentNormpos),
@@ -109,7 +113,7 @@ apply_scenario(S, {DbName, Db, FullDocInfo}, {Body, Id, Rev, CurrentNormpos}) ->
   end.
 
 
-apply_changes(S, {DbName, Db}, {BodyDict, Id}, {Normpos, Title}) ->
+apply_changes(S, {DbName, Db, Id, BodyDict}, {Normpos, Title}) ->
   % puts in updates to a 'rev_history_' field
   RevHistoryBodyDict = replace_rev_history_list(BodyDict, {Title, Normpos}),
   case couch_normalizer_db:update_doc(Db, RevHistoryBodyDict) of
