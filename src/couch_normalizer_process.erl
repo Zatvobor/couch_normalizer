@@ -40,17 +40,24 @@ init(S) ->
   % spawns document reader process
   spawn_link(fun() ->
     DbName = atom_to_binary(S#scope.label, utf8),
-    QueueDocumentsFun = fun(Db) ->
-      QueueFun = fun(#full_doc_info{id = Id}, _, Acc) ->
-        couch_work_queue:queue(S#scope.processing_queue, {DbName, Db, Id}),
-        gen_server:cast(S#scope.processing_status, {increment_value, docs_read}),
+
+    EnqueueDocsFun = fun(Db) ->
+      EnqueueDocFun = fun(#full_doc_info{id=Id, deleted=IsDeleted}, _, Acc) ->
+
+        case IsDeleted of
+          false ->
+            couch_work_queue:queue(S#scope.processing_queue, {DbName, Db, Id}),
+            gen_server:cast(S#scope.processing_status, {increment_value, docs_read});
+          true ->
+            skip
+        end,
 
         {ok, Acc}
       end,
-      couch_db:enum_docs(Db, QueueFun, [], [])
+      couch_db:enum_docs(Db, EnqueueDocFun, [], [])
     end,
 
-    couch_normalizer_db:touch_db(DbName, QueueDocumentsFun),
+    couch_normalizer_db:touch_db(DbName, EnqueueDocsFun),
 
     couch_work_queue:close(S#scope.processing_queue),
 
