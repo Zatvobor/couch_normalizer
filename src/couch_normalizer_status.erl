@@ -22,6 +22,7 @@ init(S) ->
       {continue, true},
       {docs_read, 0},
       {docs_normalized, 0},
+      {docs_deleted, 0},
       {docs_conflicted, 0}
   ]),
 

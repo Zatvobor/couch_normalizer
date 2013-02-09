@@ -45,9 +45,9 @@ update_doc(Db, Body) when is_record(Db, db) and is_tuple(Body) ->
 
 update_doc(Db, Body) when is_record(Db, db) and is_list(Body) ->
   try couch_db:update_doc(Db, couch_doc:from_json_obj({Body}), []) of
-    {ok, _}  -> ok
+    {ok, _}  -> catch_delete(proplists:get_bool(<<"_deleted">>, Body))
   catch
-    conflict -> conflict
+    conflict -> conflicted
   end.
 
 
@@ -56,3 +56,10 @@ touch_db(DbName, Fun) ->
   R = Fun(Db),
   couch_db:close(Db),
   R.
+
+
+catch_delete(true) ->
+  deleted;
+
+catch_delete(false) ->
+  updated.
