@@ -139,12 +139,15 @@ next_scenario(Ets, Normpos) when is_binary(Normpos) ->
   next_scenario(Ets, binary_to_list(Normpos));
 
 next_scenario(Ets, Normpos) when is_integer(Normpos) ->
-  case ets:next(Ets, Normpos) of
+  try ets:next(Ets, Normpos) of
     '$end_of_table' ->
       nil;
     Key ->
       [H|_] = ets:lookup(Ets, Key),
       H
+  catch
+    error: _E ->
+      nil
   end.
 
 
