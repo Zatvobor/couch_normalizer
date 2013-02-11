@@ -1,3 +1,5 @@
+[![Build Status](https://secure.travis-ci.org/datahogs/couch_normalizer.png?branch=master "Build Status")](http://travis-ci.org/datahogs/couch_normalizer)
+
 Couch Normalizer: A convenience for massive document migration
 ---------------------------------------------------------------
 
