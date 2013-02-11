@@ -3,6 +3,7 @@ script: "make setup"
 notifications:
   recipients:
     - a.zatvornitskiy@gmail.com
+    - opak.alexandr@gmail.com
 otp_release:
   - R15B03
   - R15B02
