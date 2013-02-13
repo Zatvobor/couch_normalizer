@@ -5,21 +5,9 @@ Couch Normalizer: A convenience for massive document migration
 
 at Datahogs we've been using a `Couch Normalizer` (it's a result of our challenges) as a part of our data driven engineering to one of music startup.
 
-A `Couch Normalizer` designed as a standard Apache CouchDB httpd handler (it means that you got a RESTfull interface for interoperability) and uses Rails db migration approach. Written both in Erlang and [Elixir](https://github.com/elixir-lang/elixir). Works well on production and has a great IO performance.
+The `Couch Normalizer` designed as a standard Apache CouchDB httpd handler (it means that you got a RESTfull interface for interoperability) and uses Rails db migration approach. Written both in Erlang and [Elixir](https://github.com/elixir-lang/elixir). Works well on production and has a great IO performance.
 
-As a result, it allows a developer to deploy migration scripts (aka scenarios) and change big amount of documents as fast as possible (without HTTP overhead and some kind of 'delayed jobs') via internal CouchDB functions, such as `couch_db:open_doc/2`, `couch_db:update_doc/3` and so on.
-
-
-Indicative performance (non trivial case)
-----------------------------------------
-
-    # CouchDB: 21_634_631 documents, 67.19Kb (average document size)
-    # runtime: 43 minutes and 41 seconds (2621)
-    [{ "docs_normalized":347144, "docs_read":21634631, "started_on":1357306518, "finished_on":1357309139, "num_workers":20 }]
-
-    # runtime: 27 minutes and 45 seconds (1665)
-    [{ "docs_normalized":17, "docs_read":21634631, "started_on":1357656809, "finished_on":1357658474, "num_workers":20 }]
-
+As a result, it allows to deploy migration scripts (aka scenarios) and change big amount of documents as fast as possible (without HTTP overhead and some kind of 'delayed jobs') via internal CouchDB functions, such as `couch_db:open_doc/2`, `couch_db:update_doc/3` and so on.
 
 [Scenario example](https://github.com/datahogs/couch_normalizer/blob/master/examples/1-example-scenario.exs)
 ----------------------------------------------------------------------------------------------------------------
@@ -133,6 +121,7 @@ configure CouchDB `local.ini` config
 
 That is it. Stay tuned!
 
+If you want to contribute, feel free to open an Github issue or submit a pull request.
 
 
 License
