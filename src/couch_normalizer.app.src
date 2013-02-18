@@ -1,7 +1,7 @@
 {application, couch_normalizer,
  [
   {description, "Data migration appliance that works inside Couch DB node"},
-  {vsn, "0.6.1"},
+  {vsn, "0.7.dev"},
   {modules, [couch_normalizer]},
   {registered, [couch_normalizer_manager]},
   {applications, [kernel, stdlib, couch]},
