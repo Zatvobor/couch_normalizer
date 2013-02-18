@@ -3,7 +3,9 @@ Code.require_file "../../../test_helper.exs", __FILE__
 defmodule CouchNormalizer.RegistryTest do
   use ExUnit.Case, async: true
 
-  def setup(_), do: CouchNormalizer.Registry.init
+  setup do
+    CouchNormalizer.Registry.init
+  end
 
 
   test "tries to acquire with invalid title (without normpos)" do

@@ -14,9 +14,10 @@ defmodule CouchNormalizer.ExampleScenarioTest do
 
   @subject "examples/1-example-scenario.exs"
 
-  def setup(_) do
+  setup do
     CouchNormalizer.Registry.init
     CouchNormalizer.Registry.load(@subject)
+    :ok
   end
 
   def subject_fun() do
