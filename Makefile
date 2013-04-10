@@ -4,7 +4,7 @@ setup: get-deps compile test
 
 
 get-couchdb-deps:
-	@ cd deps && git clone -b 1.2.x git://github.com/apache/couchdb.git
+	@ cd deps && git clone -b 1.2.2 git://github.com/apache/couchdb.git
 
 setup-dev-couchdb:
 	@ cd deps/couchdb && ./bootstrap && ./configure && make dev
