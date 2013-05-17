@@ -125,16 +125,16 @@ apply_changes(S, {DbName, Db, Id, BodyDict}, {Normpos, Title}) ->
   RevHistoryBodyDict = replace_rev_history_list(BodyDict, {Title, Normpos}),
   case couch_normalizer_db:update_doc(Db, RevHistoryBodyDict) of
     updated ->
-      ?LOG_INFO("'~p' normalized according to '~s' scenario~n", [Id, Title]),
+      ?LOG_INFO("'~p' normalized according to '~s' scenario~n", [get_id_from_body_dict(BodyDict), Title]),
       gen_server:cast(S#scope.processing_status, {increment_value, docs_normalized}),
       % tries again to apply another scenarios for that document
       apply_scenario(S, {DbName, Db, Id});
     deleted ->
-      ?LOG_INFO("'~p' deleted according to '~s' scenario~n", [Id, Title]),
+      ?LOG_INFO("'~p' deleted according to '~s' scenario~n", [get_id_from_body_dict(BodyDict), Title]),
       gen_server:cast(S#scope.processing_status, {increment_value, docs_deleted}),
       ok;
     conflicted ->
-      ?LOG_INFO("conflict occured for '~p' during processing a '~s' scenario~n", [Id, Title]),
+      ?LOG_INFO("conflict occured for '~p' during processing a '~s' scenario~n", [get_id_from_body_dict(BodyDict), Title]),
       gen_server:cast(S#scope.processing_status, {increment_value, docs_conflicted}),
       % it's ok, does nothing. So, go to the next document
       ok
@@ -175,3 +175,7 @@ replace_rev_history_list(Body, RevHistory) ->
 
 rev_history_list({Title, Normpos} = _RevHistory) ->
   {[{<<"title">>, Title},{<<"normpos">>, Normpos}]}.
+
+get_id_from_body_dict(BodyDict) ->
+  'Elixir-HashDict':get(BodyDict, <<"_id">>).
+
