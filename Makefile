@@ -22,11 +22,11 @@ erlang:
 	@ ./rebar compile
 
 elixir:
-	@ PATH=$(PATH):$(ELIXIR_PATH) mix compile
+	@ PATH=$(ELIXIR_PATH):$(PATH) mix compile
 
 
 test: test_elixir
 
 
 test_elixir:
-	@ PATH=$(PATH):$(ELIXIR_PATH) mix test
+	@ PATH=$(ELIXIR_PATH):$(PATH) mix test

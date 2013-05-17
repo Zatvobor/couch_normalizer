@@ -36,7 +36,7 @@ defmodule CouchNormalizer.Scenario.FieldMethods do
   @doc false
   defmacro remove_fields(names) do
     removers = lc name inlist names, do: quote(do: remove_field(unquote(name)))
-    quote do: unquote_splicing(removers)
+    quote do: (unquote_splicing(removers))
   end
 
   @doc false
