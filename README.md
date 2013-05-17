@@ -1,6 +1,7 @@
 [![Build Status](https://secure.travis-ci.org/datahogs/couch_normalizer.png?branch=master "Build Status")](http://travis-ci.org/datahogs/couch_normalizer)
 
-Tested on CouchDB versions: `1.2.1`, `1.2.2`
+Works for CouchDB '1.2.x' versions
+
 
 Couch Normalizer: A convenience for massive document migration
 --------------------------------------------------------------
