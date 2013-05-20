@@ -53,26 +53,26 @@ Let's consider a definition DSL for [example](https://github.com/datahogs/couch_
         end
       end
 
-In short, a `CouchNormalizer.Registry.acquire/2` accepts scenario `title` and `callback` function (db, _doc_id, _rev, body) which will be applied for each document inside your `CouchDB` in context of particular `db`. If `callback` function returns `{:update, body}` statement then `body` should be stored into particular `db` as is. Actually, you can use your own code inside this function and do anything with passed context as you need it.
+In short, a `CouchNormalizer.Registry.acquire/2` accepts scenario `title` and `callback` function with `db, _doc_id, _rev, body` arguments which will be applied for each document inside your `CouchDB` in context of particular `db`. If `callback` function returns `{:update, body}` statement then `body` should be stored into particular `db` as is. Actually, you can use your own code inside this function and do anything with passed context as you need.
 
 
-So, send a POST `/db/_normalize` request which starts the normalization process:
+So, send a POST to `/db/_normalize` resource and start the normalization process:
 
     curl -v -XPOST -H"Content-Type: application/json" http://127.0.0.1:5984/db/_normalize
     => {"ok":"Normalization process has been started (<0.174.0>)."}
 
 
-Each normalized (updated through scenario) document has a special `rev_history_` field which contains:
+Each normalized (already updated) documents have a special `rev_history_` field:
 
       "rev_history_" => {"title" => "1-example-scenario", "normpos" => 1}
 
-Actually, `normpos` is an anchor which means that particular document already passed through '1-example-scenario' scenario.
+Actually, `normpos` is an anchor which means that particular document already updated according to `1-example-scenario`.
 
 Fast facts are:
 
-* all normalization scenarios should be named as `2-...`, `3-...` (where prefix treats as a 'normpos');
-* a document which already has `"normpos"=>1` parameter should not be applied for "1-example-scenario" again;
-* a document which already has `"normpos"=>1` parameter will be applied _just only_ for "2-..", "3-.." scenarios once;
+* all normalization scenarios should be named as `"2-..."`, `"3-..."` (where prefix treats as `normpos`);
+* a document which already has `"normpos"=>1` parameter should not be applied for `"1-example-scenario"` again;
+* a document which already has `"normpos"=>1` parameter will be applied _just only_ for `"2-.."`, `"3-.."` scenarios once;
 * a document should be updated when `callback` function returned _just only_ `{:update, body}` statement;
 
 
@@ -81,7 +81,6 @@ Check more advanced examples:
 * [examples/2-acquire-missing-artists-fields.exs](https://github.com/datahogs/couch_normalizer/blob/master/examples/2-acquire-missing-artists-fields.exs)
 
 * [examples/3-add-artist-uri-to-track-if-album-has-it.exs](https://github.com/datahogs/couch_normalizer/blob/master/examples/3-add-artist-uri-to-track-if-album-has-it.exs)
-
 
 Scenario DSL API
 ----------------
