@@ -2,22 +2,16 @@
 
 Works for CouchDB '1.2.x' versions
 
+Couch Normalizer: a convenient way for you to alter your document database in a structured and organized manner.
 
-Couch Normalizer: A convenience for massive document migration
---------------------------------------------------------------
+We've been using a `Couch Normalizer` as a part of our data driven engineering for normalizing a large amount of documents obtained from multiple sources. Written both in Erlang and [Elixir](https://github.com/elixir-lang/elixir) and works well in production and has great performance.
 
-at Datahogs we've been using a `Couch Normalizer` (it's a result of our challenges) as a part of our data driven engineering to one of music startup.
+The `Couch Normalizer` designed as a standard httpd handler for `Apache CouchDB` and uses a `Rails` approach such as `migrations`.
 
-The `Couch Normalizer` designed as a standard Apache CouchDB httpd handler (it means that you got a RESTfull interface for interoperability) and uses Rails db migration approach. Written both in Erlang and [Elixir](https://github.com/elixir-lang/elixir). Works well on production and has a great IO performance.
+As a result, it allows to deploy migration scenarios and change a big amount of documents as fast as possible using a `CouchDB` internal functions such as `couch_db:open_doc/2`, `couch_db:update_doc/3` and so on.
 
-As a result, it allows to deploy migration scripts (aka scenarios) and change big amount of documents as fast as possible (without HTTP overhead and some kind of 'delayed jobs') via internal CouchDB functions, such as `couch_db:open_doc/2`, `couch_db:update_doc/3` and so on.
 
-[Scenario example](https://github.com/datahogs/couch_normalizer/blob/master/examples/1-example-scenario.exs)
-----------------------------------------------------------------------------------------------------------------
-
-Imagine, you manage a big DB which contains 'user', 'track', 'album', 'artist' documents and you have to improve/change structure for all 'user' documents once or just only for couple of recent (daily) documents as quick as possible, without network issues/latency, fallbacks and execution monitoring...
-
-Let's consider an example:
+Let's consider a definition DSL for [example](https://github.com/datahogs/couch_normalizer/blob/master/examples/1-example-scenario.exs):
 
       use CouchNormalizer.Scenario
 
@@ -59,22 +53,27 @@ Let's consider an example:
         end
       end
 
-All you need to do, just to submit a POST request:
+In short, a `CouchNormalizer.Registry.acquire/2` accepts scenario `title` and `callback` function (db, _doc_id, _rev, body) which will be applied for each document inside your `CouchDB` in context of particular `db`. If `callback` function returns `{:update, body}` statement then `body` should be stored into particular `db` as is. Actually, you can use your own code inside this function and do anything with passed context as you need it.
+
+
+So, send a POST `/db/_normalize` request which starts the normalization process:
 
     curl -v -XPOST -H"Content-Type: application/json" http://127.0.0.1:5984/db/_normalize
     => {"ok":"Normalization process has been started (<0.174.0>)."}
 
-As a result, a `Couch Normalizer` starts internal iterator for `db` database and tries to apply each document to `1-example-scenario` scenario.
 
-In short, `CouchNormalizer.Registry.acquire/2` accepts scenario `title` and `callback` function which will be applied for each document inside your CouchDB. Whether `callback` returns `{:update, body}`, then `Couch Normalizer` will update this document immediately.
-
-Each normalized document has a special `rev_history_` field which contains recent normalization info:
+Each normalized (updated through scenario) document has a special `rev_history_` field which contains:
 
       "rev_history_" => {"title" => "1-example-scenario", "normpos" => 1}
 
-Actually, `normpos` is a anchor and means that some document meets some scenario. So, for further normalization only 'user' documents without `"normpos" => 1` will be processed and updated.
+Actually, `normpos` is an anchor which means that particular document already passed through '1-example-scenario' scenario.
 
-All further migrations should be called as `2-...`, `3-...`. In case when `Couch Normalizer` processes a document which hasn't yet a `normpos`, then processing engine will try to apply a document form the `1-...` to `X-...`.
+Fast facts are:
+
+* all normalization scenarios should be named as `2-...`, `3-...` (where prefix treats as a 'normpos');
+* a document which already has `"normpos"=>1` parameter should not be applied for "1-example-scenario" again;
+* a document which already has `"normpos"=>1` parameter will be applied _just only_ for "2-..", "3-.." scenarios once;
+* a document should be updated when `callback` function returned _just only_ `{:update, body}` statement;
 
 
 Check more advanced examples:
