@@ -117,10 +117,11 @@ configure CouchDB `local.ini` config
     _normalize = {couch_normalizer_httpd_db, handle_normalize_req}
 
     [daemons]
-    couch_normalizer_manager={couch_normalizer_manager, start_link, [[{seed_labeled, [{scenarios_path, "/path/to/scenarios"}, {num_workers, 5}]}]]}
+    ; '5' means num of workers
+    couch_normalizer_manager={couch_normalizer_manager, start_link, [[{seed_labeled, "/path/to/scenarios", 5}]]}
 
 
-That is it. Stay tuned!
+That's it. Stay tuned!
 
 If you want to contribute, feel free to open an Github issue or submit a pull request.
 

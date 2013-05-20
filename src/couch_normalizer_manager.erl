@@ -15,11 +15,11 @@ start_link(Config) ->
   application:start(elixir),
 
   % a state factory as a callback function
-  Action = fun({Label, Options} = _E) ->
+  Action = fun({Label, ScenariosPath, NumWorkers} = _E) ->
     Scope = #scope {
       label          = Label,
-      scenarios_path = couch_util:get_value(scenarios_path, Options, "/usr/local/etc/couchdb/scenarions"),
-      num_workers    = couch_util:get_value(num_workers, Options, 3)
+      scenarios_path = ScenariosPath,
+      num_workers    = NumWorkers
     },
     {Label, Scope}
   end,
