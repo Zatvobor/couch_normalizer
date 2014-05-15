@@ -1,4 +1,4 @@
-[![Build Status](https://secure.travis-ci.org/datahogs/couch_normalizer.png?branch=master "Build Status")](http://travis-ci.org/datahogs/couch_normalizer)
+[![Build Status](https://secure.travis-ci.org/roundscope/couch_normalizer.png?branch=master "Build Status")](http://travis-ci.org/roundscope/couch_normalizer)
 
 Works for CouchDB '1.2.x' versions
 
@@ -11,7 +11,7 @@ The `Couch Normalizer` designed as a standard httpd handler for `Apache CouchDB`
 As a result, it allows to deploy migration scenarios and change a big amount of documents as fast as possible using a `CouchDB` internal functions such as `couch_db:open_doc/2`, `couch_db:update_doc/3` and so on.
 
 
-Let's consider a definition DSL for [example](https://github.com/datahogs/couch_normalizer/blob/master/examples/1-example-scenario.exs):
+Let's consider a definition DSL for [example](https://github.com/roundscope/couch_normalizer/blob/master/examples/1-example-scenario.exs):
 
       use CouchNormalizer.Scenario
 
@@ -78,14 +78,14 @@ Fast facts are:
 
 Check more advanced examples:
 
-* [examples/2-acquire-missing-artists-fields.exs](https://github.com/datahogs/couch_normalizer/blob/master/examples/2-acquire-missing-artists-fields.exs)
+* [examples/2-acquire-missing-artists-fields.exs](https://github.com/roundscope/couch_normalizer/blob/master/examples/2-acquire-missing-artists-fields.exs)
 
-* [examples/3-add-artist-uri-to-track-if-album-has-it.exs](https://github.com/datahogs/couch_normalizer/blob/master/examples/3-add-artist-uri-to-track-if-album-has-it.exs)
+* [examples/3-add-artist-uri-to-track-if-album-has-it.exs](https://github.com/roundscope/couch_normalizer/blob/master/examples/3-add-artist-uri-to-track-if-album-has-it.exs)
 
 Scenario DSL API
 ----------------
 
-A [CouchNormalizer.Scenario](https://github.com/datahogs/couch_normalizer/blob/master/lib/couch_normalizer/scenario.ex) module would be a good start point.
+A [CouchNormalizer.Scenario](https://github.com/roundscope/couch_normalizer/blob/master/lib/couch_normalizer/scenario.ex) module would be a good start point.
 
 
 Normalization HTTP API
@@ -130,4 +130,4 @@ License
 -------
 
 `Couch Normalizer` source code is released under Apache 2 License.
-Check [LICENSE](https://github.com/datahogs/couch_normalizer/blob/master/LICENSE) and [NOTICE](https://github.com/datahogs/couch_normalizer/blob/master/NOTICE) files for more details.
+Check [LICENSE](https://github.com/roundscope/couch_normalizer/blob/master/LICENSE) and [NOTICE](https://github.com/roundscope/couch_normalizer/blob/master/NOTICE) files for more details.
